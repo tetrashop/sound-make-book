@@ -1,0 +1,17 @@
+{
+  "name": "sound-make-book",
+  "version": "1.0.0",
+  "description": "تبدیل متن به کتاب صوتی با eSpeak",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sound-make-book | کتاب صوتی ساز</title>
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        button {
+            background: #f43f5e;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        audio {
+            width: 100%;
+            margin: 20px 0;
+        }
+        .status {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎧 sound-make-book</h1>
+        <p>متن خود را وارد کنید تا به کتاب صوتی تبدیل شود</p>
+        
+        <textarea id="textInput" rows="5" placeholder="متن خود را اینجا بنویسید..."></textarea>
+        
+        <button onclick="generateAudio()">تولید کتاب صوتی</button>
+        
+        <div class="status" id="status"></div>
+        <audio id="audioPlayer" controls style="display:none;"></audio>
+    </div>
+
+    <script>
+        async function generateAudio() {
+            const text = document.getElementById('textInput').value;
+            if (!text) {
+                alert('لطفاً متن را وارد کنید');
+                return;
+            }
+            
+            document.getElementById('status').innerHTML = '🔄 در حال تولید صدا...';
+            
+            try {
+                const response = await fetch('/api/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voiceId: 'fa' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('status').innerHTML = '✅ صدا با موفقیت تولید شد';
+                    const audioPlayer = document.getElementById('audioPlayer');
+                    audioPlayer.src = data.audioUrl;
+                    audioPlayer.style.display = 'block';
+                    audioPlayer.play();
+                } else {
+                    document.getElementById('status').innerHTML = '❌ خطا: ' + data.error;
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ خطا در اتصال به سرور';
+            }
+        }
+    </script>
+</body>
+</html>

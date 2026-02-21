@@ -1,0 +1,91 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:  # امکان اجرای دستی
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create local.properties
+        run: |
+          cd android-app
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Build APK
+        run: |
+          cd android-app
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Sign APK (optional - if you have keystore)
+        if: false  # غیرفعال کردن موقت
+        run: |
+          # اینجا می‌توانید امضای APK را اضافه کنید
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sound-make-book-apk
+          path: android-app/app/build/outputs/apk/release/app-release.apk
+
+      - name: Get version
+        id: version
+        run: |
+          echo "VERSION=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'push'
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: "📱 نسخه ${{ steps.version.outputs.VERSION }} - اندروید"
+          body: |
+            ## 🎉 نسخه جدید اندروید sound-make-book
+
+            **تاریخ انتشار:** $(date +'%Y/%m/%d')
+
+            ### 📱 فایل APK
+            - فایل APK آماده نصب روی اندروید ۸ به بالا
+            - حجم: حدود ۱۵ مگابایت
+
+            ### ✨ قابلیت‌های این نسخه
+            - تشخیص خودکار زبان متن
+            - تبدیل متن به صدا با eSpeak
+            - پشتیبانی از فارسی و انگلیسی
+            - موسیقی پس‌زمینه
+            - ذخیره پروژه‌ها
+
+            ### 📥 نحوه نصب
+            1. فایل APK را دانلود کنید
+            2. در تنظیمات اندروید، گزینه "نصب از منابع ناشناس" را فعال کنید
+            3. فایل را اجرا و نصب کنید
+
+            ### 🐛 رفع باگ‌ها
+            - اولین نسخه عمومی
+
+            ---
+            **توسعه‌دهنده:** رامین اجلال
+          files: |
+            android-app/app/build/outputs/apk/release/app-release.apk
+          prerelease: false
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

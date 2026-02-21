@@ -1,116 +1,107 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sound-make-book | کتاب صوتی ساز</title>
-    <style>
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 600px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
-        textarea {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-family: inherit;
-            font-size: 1rem;
-            resize: vertical;
-        }
-        button {
-            background: #f43f5e;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        audio {
-            width: 100%;
-            margin: 20px 0;
-        }
-        .status {
-            background: rgba(255,255,255,0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sound-make-book v2.0 · ۹ قابلیت</title>
+  <link rel="stylesheet" href="/styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>🎧 sound-make-book</h1>
-        <p>متن خود را وارد کنید تا به کتاب صوتی تبدیل شود</p>
-        
-        <textarea id="textInput" rows="5" placeholder="متن خود را اینجا بنویسید..."></textarea>
-        
-        <button onclick="generateAudio()">تولید کتاب صوتی</button>
-        
-        <div class="status" id="status"></div>
-        <audio id="audioPlayer" controls style="display:none;"></audio>
-    </div>
+  <div class="app">
+    <header>
+      <h1>📖 sound-make-book <span class="badge">نسخه ۲.۰ با ۹ قابلیت</span></h1>
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="editor">ویرایشگر</button>
+        <button class="tab-btn" data-tab="multi">چندصدایی</button>
+        <button class="tab-btn" data-tab="ocr">OCR تصویر</button>
+        <button class="tab-btn" data-tab="projects">داشبورد</button>
+        <button class="tab-btn" data-tab="settings">تنظیمات پیشرفته</button>
+      </nav>
+    </header>
 
-    <script>
-        async function generateAudio() {
-            const text = document.getElementById('textInput').value;
-            if (!text) {
-                alert('لطفاً متن را وارد کنید');
-                return;
-            }
-            
-            document.getElementById('status').innerHTML = '🔄 در حال تولید صدا...';
-            
-            try {
-                const response = await fetch('/api/generate-audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voiceId: 'fa' })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('status').innerHTML = '✅ صدا با موفقیت تولید شد';
-                    const audioPlayer = document.getElementById('audioPlayer');
-                    audioPlayer.src = data.audioUrl;
-                    audioPlayer.style.display = 'block';
-                    audioPlayer.play();
-                } else {
-                    document.getElementById('status').innerHTML = '❌ خطا: ' + data.error;
-                }
-            } catch (error) {
-                document.getElementById('status').innerHTML = '❌ خطا در اتصال به سرور';
-            }
-        }
-    </script>
+    <main>
+      <!-- تب ویرایشگر (قابلیت‌های ۱,۲,۵,۷) -->
+      <section id="editor" class="tab-content active">
+        <div class="card">
+          <h2>📝 ویرایشگر هوشمند</h2>
+          <textarea id="text-input" placeholder="متن خود را بنویسید..." rows="8"></textarea>
+          <div class="toolbar">
+            <button id="detect-lang" class="btn">🔍 تشخیص خودکار زبان</button>
+            <span id="detected-lang"></span>
+            <input type="file" id="ocr-file" accept="image/*" style="display:none">
+            <button id="ocr-upload" class="btn">📸 آپلود عکس برای OCR</button>
+          </div>
+          <div class="preview-area">
+            <h3>پیش‌نمایش صدا</h3>
+            <button id="preview-btn" class="btn">▶️ پخش ۱۰ ثانیه اول</button>
+            <audio id="preview-audio" controls></audio>
+          </div>
+          <div class="music-section">
+            <h3>🎵 موسیقی پس‌زمینه</h3>
+            <select id="music-type">
+              <option value="none">بدون موسیقی</option>
+              <option value="soft_piano">پیانوی ملایم</option>
+              <option value="cinematic">سینماتیک</option>
+            </select>
+            <label>حجم موسیقی: <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.3"></label>
+          </div>
+          <button id="generate-final" class="btn btn-primary">🎧 تولید کتاب صوتی کامل</button>
+          <div class="progress" id="progress" style="display:none">در حال پردازش...</div>
+        </div>
+      </section>
+
+      <!-- تب چندصدایی (قابلیت ۳) -->
+      <section id="multi" class="tab-content">
+        <div class="card">
+          <h2>🗣️ تنظیم چندصدایی</h2>
+          <p>متن را به بخش‌ها تقسیم و برای هر بخش صدا و موسیقی جداگانه انتخاب کنید</p>
+          <div id="segments"></div>
+          <button id="add-segment" class="btn">➕ افزودن بخش</button>
+          <button id="generate-multi" class="btn btn-primary">🎬 تولید با چند صدا</button>
+        </div>
+      </section>
+
+      <!-- تب OCR (قابلیت ۶) -->
+      <section id="ocr" class="tab-content">
+        <div class="card">
+          <h2>📷 استخراج متن از تصویر</h2>
+          <input type="file" id="ocr-image" accept="image/*">
+          <button id="ocr-extract" class="btn">استخراج متن</button>
+          <div id="ocr-result"></div>
+        </div>
+      </section>
+
+      <!-- تب داشبورد پروژه‌ها (قابلیت ۴ و ۹) -->
+      <section id="projects" class="tab-content">
+        <div class="card">
+          <h2>📁 پروژه‌های ذخیره شده</h2>
+          <div id="project-list"></div>
+          <button id="refresh-projects" class="btn">🔄 به‌روزرسانی</button>
+          <hr>
+          <h3>💾 ذخیره در Google Drive</h3>
+          <button id="drive-auth" class="btn">اتصال به Drive</button>
+          <input type="text" id="drive-filename" placeholder="نام فایل">
+          <button id="save-to-drive" class="btn" disabled>ذخیره در Drive</button>
+        </div>
+      </section>
+
+      <!-- تب تنظیمات پیشرفته (قابلیت ۸) -->
+      <section id="settings" class="tab-content">
+        <div class="card">
+          <h2>⚙️ تنظیمات پیشرفته صدا</h2>
+          <label>سرعت گفتار (۰.۵ تا ۲): <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1"></label>
+          <label>زیر و بم صدا (-۱۰ تا +۱۰): <input type="range" id="pitch" min="-10" max="10" step="1" value="0"></label>
+          <label>فاصله بین کلمات (ms): <input type="number" id="gap" value="0"></label>
+          <button id="generate-advanced" class="btn">🎛️ تولید با تنظیمات سفارشی</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>sound-make-book v2.0 · ۹ قابلیت · توسعه‌یافته توسط رامین اجلال</p>
+    </footer>
+  </div>
+  <script src="/scripts/main.js"></script>
 </body>
 </html>

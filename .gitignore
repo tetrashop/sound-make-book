@@ -95,3 +95,4 @@ typings/
 # Temp directories
 tmp/
 temp/
+.vercel

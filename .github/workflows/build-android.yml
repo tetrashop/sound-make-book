@@ -3,10 +3,9 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'android-app/**'
-      - '.github/workflows/build-android.yml'
-  workflow_dispatch:  # امکان اجرای دستی
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -33,59 +32,29 @@ jobs:
         run: |
           cd android-app
           chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleRelease
 
-      - name: Sign APK (optional - if you have keystore)
-        if: false  # غیرفعال کردن موقت
+      - name: Sign APK (debug key for now)
         run: |
-          # اینجا می‌توانید امضای APK را اضافه کنید
+          cd android-app
+          keytool -genkey -v -keystore debug.keystore -alias debug -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=Debug"
+          ./gradlew signReleaseBundle
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sound-make-book-apk
+          name: sound-make-book-android
           path: android-app/app/build/outputs/apk/release/app-release.apk
-
-      - name: Get version
-        id: version
-        run: |
-          echo "VERSION=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
-        if: github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: v${{ steps.version.outputs.VERSION }}
-          name: "📱 نسخه ${{ steps.version.outputs.VERSION }} - اندروید"
-          body: |
-            ## 🎉 نسخه جدید اندروید sound-make-book
-
-            **تاریخ انتشار:** $(date +'%Y/%m/%d')
-
-            ### 📱 فایل APK
-            - فایل APK آماده نصب روی اندروید ۸ به بالا
-            - حجم: حدود ۱۵ مگابایت
-
-            ### ✨ قابلیت‌های این نسخه
-            - تشخیص خودکار زبان متن
-            - تبدیل متن به صدا با eSpeak
-            - پشتیبانی از فارسی و انگلیسی
-            - موسیقی پس‌زمینه
-            - ذخیره پروژه‌ها
-
-            ### 📥 نحوه نصب
-            1. فایل APK را دانلود کنید
-            2. در تنظیمات اندروید، گزینه "نصب از منابع ناشناس" را فعال کنید
-            3. فایل را اجرا و نصب کنید
-
-            ### 🐛 رفع باگ‌ها
-            - اولین نسخه عمومی
-
-            ---
-            **توسعه‌دهنده:** رامین اجلال
+          name: sound-make-book ${{ github.ref_name }}
+          body_path: android_release_notes.md
           files: |
             android-app/app/build/outputs/apk/release/app-release.apk
-          prerelease: false
           draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

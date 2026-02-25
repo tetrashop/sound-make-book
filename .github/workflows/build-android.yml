@@ -23,22 +23,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
       - name: Create local.properties
         run: |
           cd android-app
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
+      - name: Make gradlew executable
+        run: chmod +x android-app/gradlew
+
       - name: Build APK
         run: |
           cd android-app
-          chmod +x gradlew
           ./gradlew assembleRelease
-
-      - name: Sign APK (debug key for now)
-        run: |
-          cd android-app
-          keytool -genkey -v -keystore debug.keystore -alias debug -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=Debug"
-          ./gradlew signReleaseBundle
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
@@ -51,7 +50,24 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: sound-make-book ${{ github.ref_name }}
-          body_path: android_release_notes.md
+          body: |
+            📱 sound-make-book برای اندروید
+
+            🎧 تبدیل متن به کتاب صوتی با ۹ قابلیت پیشرفته
+
+            ✨ ویژگی‌ها
+            - تشخیص خودکار زبان (فارسی/انگلیسی)
+            - تبدیل متن به صدای طبیعی
+            - موسیقی پس‌زمینه
+            - OCR استخراج متن از تصویر
+            - تنظیمات پیشرفته صدا
+            - ذخیره و مدیریت پروژه‌ها
+            - کاملاً آفلاین و رایگان
+
+            📱 سازگاری
+            - اندروید ۸ به بالا
+
+            👨‍💻 توسعه‌دهنده: رامین اجلال - @tetrashop
           files: |
             android-app/app/build/outputs/apk/release/app-release.apk
           draft: false

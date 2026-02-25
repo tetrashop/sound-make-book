@@ -35,35 +35,33 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                webView.loadData("<html><body style='text-align:center;padding:20px;'><h2>خطا در بارگذاری</h2><p>" + description + "</p></body></html>", "text/html", "UTF-8");
+                showError("خطا در بارگذاری صفحه: " + description);
             }
         });
 
         try {
             // بررسی وجود فایل index.html در assets
-            String[] files;
-            try {
-                files = getAssets().list("");
-                boolean found = false;
-                for (String file : files) {
-                    if (file.equals("index.html")) {
-                        found = true;
-                        break;
-                    }
+            String[] files = getAssets().list("");
+            boolean found = false;
+            for (String file : files) {
+                if (file.equals("index.html")) {
+                    found = true;
+                    break;
                 }
-                if (!found) {
-                    webView.loadData("<html><body style='text-align:center;padding:20px;'><h2>خطا</h2><p>فایل index.html در assets یافت نشد.</p></body></html>", "text/html", "UTF-8");
-                    return;
-                }
-            } catch (Exception e) {
-                webView.loadData("<html><body style='text-align:center;padding:20px;'><h2>خطا در assets</h2><p>" + e.getMessage() + "</p></body></html>", "text/html", "UTF-8");
+            }
+            if (!found) {
+                showError("فایل index.html در assets یافت نشد");
                 return;
             }
-
             webView.loadUrl("file:///android_asset/index.html");
         } catch (Exception e) {
-            webView.loadData("<html><body style='text-align:center;padding:20px;'><h2>خطا</h2><p>" + e.getMessage() + "</p></body></html>", "text/html", "UTF-8");
+            showError("خطا: " + e.toString() + "\n" + Log.getStackTraceString(e));
             e.printStackTrace();
         }
+    }
+
+    private void showError(String message) {
+        String html = "<html><body style='text-align:center;padding:20px;'><h2>خطا</h2><p>" + message.replace("\n", "<br>") + "</p></body></html>";
+        webView.loadData(html, "text/html", "UTF-8");
     }
 }

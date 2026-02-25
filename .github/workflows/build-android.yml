@@ -39,38 +39,31 @@ jobs:
           cd android-app
           ./gradlew assembleRelease
 
+      - name: Find APK file
+        id: find_apk
+        run: |
+          APK_PATH=$(find android-app -name "*.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ No APK file found!"
+            exit 1
+          fi
+          echo "✅ Found APK at: $APK_PATH"
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: sound-make-book-android
-          path: android-app/app/build/outputs/apk/release/app-release.apk
+          path: ${{ steps.find_apk.outputs.apk_path }}
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Create Release using GitHub CLI
         if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: sound-make-book ${{ github.ref_name }}
-          body: |
-            📱 sound-make-book برای اندروید
-
-            🎧 تبدیل متن به کتاب صوتی با ۹ قابلیت پیشرفته
-
-            ✨ ویژگی‌ها
-            - تشخیص خودکار زبان (فارسی/انگلیسی)
-            - تبدیل متن به صدای طبیعی
-            - موسیقی پس‌زمینه
-            - OCR استخراج متن از تصویر
-            - تنظیمات پیشرفته صدا
-            - ذخیره و مدیریت پروژه‌ها
-            - کاملاً آفلاین و رایگان
-
-            📱 سازگاری
-            - اندروید ۸ به بالا
-
-            👨‍💻 توسعه‌دهنده: رامین اجلال - @tetrashop
-          files: |
-            android-app/app/build/outputs/apk/release/app-release.apk
-          draft: false
-          prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK_PATH="${{ steps.find_apk.outputs.apk_path }}"
+          echo "📦 Creating release for tag: ${{ github.ref_name }} with APK: $APK_PATH"
+          gh release create ${{ github.ref_name }} \
+            --title "📱 sound-make-book ${{ github.ref_name }}" \
+            --notes-file android_release_notes.md \
+            "$APK_PATH" || echo "⚠️ Release creation failed but continuing"

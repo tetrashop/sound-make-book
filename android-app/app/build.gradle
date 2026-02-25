@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdk 34
+namespace "com.tetrashop.soundmakebook"   // این خط را اضافه کن
     defaultConfig {
         applicationId "com.tetrashop.soundmakebook"
         minSdk 21

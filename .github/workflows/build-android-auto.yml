@@ -59,16 +59,30 @@ jobs:
           cd android-app
           ./gradlew assembleRelease --no-daemon
 
-      - name: Find APK file
-        id: find_apk
-        run: |
-          APK_PATH=$(find android-app -name "*.apk" -type f | head -1)
-          if [ -z "$APK_PATH" ]; then
-            echo "❌ No APK file found!"
-            exit 1
-          fi
-          echo "✅ Found APK at: $APK_PATH"
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+      - name: Sign APK with debug key
+  run: |
+    cd android-app/app/build/outputs/apk/release/
+    # نصب apksigner اگر نصب نیست
+    apksigner --version || (apt update && apt install apksigner -y)
+    # ایجاد کلید debug موقت
+    keytool -genkey -v -keystore debug.keystore -alias debug -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=Debug"
+    # امضای فایل
+    apksigner sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android --out app-release-signed.apk app-release-unsigned.apk
+    # حذف فایل unsigned (اختیاری)
+    rm app-release-unsigned.apk
+    mv app-release-signed.apk app-release.apk
+
+- name: Find APK file
+  id: find_apk
+  run: |
+    APK_PATH=$(find android-app -name "app-release.apk" -type f | head -1)
+    if [ -z "$APK_PATH" ]; then
+      echo "❌ Signed APK not found!"
+      exit 1
+    fi
+    echo "✅ Found signed APK at: $APK_PATH"
+    echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4

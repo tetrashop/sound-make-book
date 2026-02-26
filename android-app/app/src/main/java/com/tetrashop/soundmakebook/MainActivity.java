@@ -4,10 +4,12 @@ import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.ConsoleMessage;
-import android.webkit.WebChromeClient;
-import android.util.Log;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewAssetLoader.AssetsPathHandler;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
@@ -16,52 +18,37 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+
+        // ایجاد WebViewAssetLoader برای سرویس فایل‌های assets با پروتکل https
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new AssetsPathHandler(this))
+                .build();
+
         webView = findViewById(R.id.webview);
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setAllowContentAccess(true);
-        
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                Log.d("WebView", consoleMessage.message() + " -- line " + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId());
-                return true;
-            }
-        });
-        
+        webSettings.setAllowFileAccess(false);          // غیرفعال کردن دسترسی file://
+        webSettings.setAllowContentAccess(false);       // غیرفعال کردن دسترسی content://
+        webSettings.setAllowFileAccessFromFileURLs(false); // غیرفعال کردن دسترسی از فایل‌ها
+        webSettings.setAllowUniversalAccessFromFileURLs(false);
+
+        // تنظیم WebViewClient برای intercept کردن درخواست‌ها و پاسخ‌دهی با assetLoader
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                showError("خطا در بارگذاری صفحه: " + description);
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            @SuppressWarnings("deprecation") // برای سازگاری با اندروید پایین‌تر
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                return assetLoader.shouldInterceptRequest(android.net.Uri.parse(url));
             }
         });
 
-        try {
-            // بررسی وجود فایل index.html در assets
-            String[] files = getAssets().list("");
-            boolean found = false;
-            for (String file : files) {
-                if (file.equals("index.html")) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                showError("فایل index.html در assets یافت نشد");
-                return;
-            }
-            webView.loadUrl("file:///android_asset/index.html");
-        } catch (Exception e) {
-            showError("خطا: " + e.toString() + "\n" + Log.getStackTraceString(e));
-            e.printStackTrace();
-        }
-    }
-
-    private void showError(String message) {
-        String html = "<html><body style='text-align:center;padding:20px;'><h2>خطا</h2><p>" + message.replace("\n", "<br>") + "</p></body></html>";
-        webView.loadData(html, "text/html", "UTF-8");
+        // بارگذاری فایل index.html با آدرس https
+        // دامنه appassets.androidplatform.net توسط WebViewAssetLoader رزرو شده است 
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
 }

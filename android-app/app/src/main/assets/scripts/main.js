@@ -16,122 +16,86 @@ document.getElementById('detect-lang')?.addEventListener('click', () => {
     alert('لطفاً متن را وارد کنید');
     return;
   }
-  // تشخیص ساده (در نسخه واقعی با API انجام می‌شود)
-  const hasEnglish = /[a-zA-Z]/.test(text);
-  const hasPersian = /[\u0600-\u06FF]/.test(text);
-  
-  let detected = 'نامشخص';
-  if (hasPersian && !hasEnglish) detected = 'فارسی';
-  else if (hasEnglish && !hasPersian) detected = 'انگلیسی';
-  else if (hasPersian && hasEnglish) detected = 'ترکیبی (فارسی/انگلیسی)';
-  
-  document.getElementById('detected-lang').textContent = `زبان تشخیص‌داده‌شده: ${detected}`;
-});
-
-// ==================== OCR (شبیه‌سازی) ====================
-document.getElementById('ocr-upload')?.addEventListener('click', () => {
-  document.getElementById('ocr-file').click();
-});
-
-document.getElementById('ocr-file')?.addEventListener('change', function(e) {
-  if (e.target.files[0]) {
-    alert('⚠️ در حالت فایل محلی، OCR واقعی کار نمی‌کند.\nبرای تست، یک متن آزمایشی در کادر متن قرار داده می‌شود.');
-    document.getElementById('text-input').value = 'این یک متن آزمایشی است که از تصویر استخراج شده است.\nدر نسخه سرور محلی با Node.js، OCR واقعی با Tesseract کار می‌کند.';
+  // فراخوانی تابع جاوا
+  if (window.AndroidBridge) {
+    window.AndroidBridge.detectLanguage(text);
+  } else {
+    alert('خطا: پل ارتباطی با اندروید برقرار نیست');
   }
 });
 
-// ==================== پیش‌نمایش صدا (شبیه‌سازی) ====================
+window.onLanguageDetected = function(lang) {
+  const langMap = { fa: 'فارسی', en: 'انگلیسی' };
+  document.getElementById('detected-lang').textContent = `زبان تشخیص‌داده‌شده: ${langMap[lang] || lang}`;
+};
+
+// ==================== پیش‌نمایش صدا (با TTS اندروید) ====================
 document.getElementById('preview-btn')?.addEventListener('click', () => {
   const text = document.getElementById('text-input').value;
   if (!text) {
     alert('لطفاً متن را وارد کنید');
     return;
   }
-  
-  alert('🔊 در حالت فایل محلی، پیش‌نمایش صدا فقط با سرور Node.js کار می‌کند.\nبرای استفاده از قابلیت‌های کامل، سرور را با دستور "node api/index.js" اجرا کنید.');
-});
-
-// ==================== تولید نهایی (شبیه‌سازی) ====================
-document.getElementById('generate-final')?.addEventListener('click', () => {
-  const text = document.getElementById('text-input').value;
-  if (!text) {
-    alert('لطفاً متن را وارد کنید');
-    return;
+  const utteranceId = 'preview_' + Date.now();
+  if (window.AndroidBridge) {
+    window.AndroidBridge.speak(text, utteranceId);
+  } else {
+    alert('خطا: پل ارتباطی با اندروید برقرار نیست');
   }
-  
-  document.getElementById('progress').style.display = 'block';
-  document.getElementById('progress').textContent = '⏳ در حال اتصال به سرور...';
-  
-  setTimeout(() => {
-    document.getElementById('progress').style.display = 'none';
-    alert('⚠️ در حالت فایل محلی، تولید صدا فقط با سرور Node.js کار می‌کند.\nبرای استفاده از قابلیت‌های کامل، سرور را با دستور "node api/index.js" اجرا کنید.');
-  }, 1500);
 });
 
-// ==================== بخش چندصدایی (شبیه‌سازی) ====================
-let segmentCount = 1;
-document.getElementById('add-segment')?.addEventListener('click', () => {
-  const container = document.getElementById('segments');
-  const div = document.createElement('div');
-  div.innerHTML = `
-    <h4>بخش ${segmentCount}</h4>
-    <textarea class="segment-text" placeholder="متن این بخش..." rows="3"></textarea>
-    <select class="segment-voice">
-      <option value="fa">فارسی</option>
-      <option value="en">انگلیسی</option>
-    </select>
-    <button class="remove-segment btn" style="background:#ef4444; color:white; border:none; padding:5px 10px;">✖ حذف</button>
-  `;
-  container.appendChild(div);
-  
-  div.querySelector('.remove-segment').addEventListener('click', () => div.remove());
-  segmentCount++;
+document.getElementById('stop-speak')?.addEventListener('click', () => {
+  if (window.AndroidBridge) {
+    window.AndroidBridge.stopSpeaking();
+  }
 });
 
-document.getElementById('generate-multi')?.addEventListener('click', () => {
-  alert('⚠️ در حالت فایل محلی، تولید چندصدایی فقط با سرور Node.js کار می‌کند.');
+// ==================== OCR (غیرفعال) ====================
+document.getElementById('ocr-extract')?.addEventListener('click', () => {
+  alert('قابلیت OCR در این نسخه غیرفعال است. از نسخه وب با سرور Node.js استفاده کنید.');
 });
 
-// ==================== پروژه‌ها (شبیه‌سازی) ====================
-function cargarProyectos() {
+// ==================== پروژه‌ها (ذخیره‌سازی موقت) ====================
+async function cargarProyectos() {
+  // در نسخه اندروید، از localStorage استفاده می‌کنیم
+  const projects = JSON.parse(localStorage.getItem('projects') || '[]');
   const list = document.getElementById('project-list');
-  // در حالت فایل محلی، پروژه‌های آزمایشی نمایش داده می‌شوند
-  list.innerHTML = `
+  list.innerHTML = projects.map(p => `
     <div class="project-item">
-      <span>📁 پروژه آزمایشی ۱</span>
-      <audio controls src=""></audio>
-      <button onclick="alert('در حالت فایل محلی، این قابلیت غیرفعال است.')">🗑️ حذف</button>
+      <span>${p.name} (${new Date(p.createdAt).toLocaleDateString('fa-IR')})</span>
+      <button onclick="eliminarProyecto('${p.id}')">🗑️</button>
     </div>
-    <div class="project-item">
-      <span>📁 پروژه آزمایشی ۲</span>
-      <audio controls src=""></audio>
-      <button onclick="alert('در حالت فایل محلی، این قابلیت غیرفعال است.')">🗑️ حذف</button>
-    </div>
-    <p style="color: #ef4444; margin-top: 10px;">⚠️ برای ذخیره و مدیریت واقعی پروژه‌ها، سرور Node.js را اجرا کنید.</p>
-  `;
+  `).join('');
 }
 
 document.getElementById('refresh-projects')?.addEventListener('click', cargarProyectos);
 cargarProyectos();
 
-// ==================== تنظیمات پیشرفته (شبیه‌سازی) ====================
-document.getElementById('generate-advanced')?.addEventListener('click', () => {
-  const text = document.getElementById('text-input').value;
-  if (!text) {
-    alert('لطفاً متن را وارد کنید');
-    return;
-  }
-  
-  const speed = document.getElementById('speed').value;
-  const pitch = document.getElementById('pitch').value;
-  const gap = document.getElementById('gap').value;
-  
-  alert(`🔧 تنظیمات پیشرفته:\nسرعت: ${speed}\nزیر و بم: ${pitch}\nفاصله: ${gap}\n\n⚠️ تولید واقعی با این تنظیمات فقط با سرور Node.js کار می‌کند.`);
+window.eliminarProyecto = function(id) {
+  let projects = JSON.parse(localStorage.getItem('projects') || '[]');
+  projects = projects.filter(p => p.id !== id);
+  localStorage.setItem('projects', JSON.stringify(projects));
+  cargarProyectos();
+};
+
+// ذخیره پروژه
+document.getElementById('save-project')?.addEventListener('click', () => {
+  const name = document.getElementById('project-name').value;
+  if (!name) return alert('نام پروژه را وارد کنید');
+  const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+  const newProject = {
+    id: Date.now().toString(),
+    name: name,
+    createdAt: new Date().toISOString(),
+    settings: {}
+  };
+  projects.push(newProject);
+  localStorage.setItem('projects', JSON.stringify(projects));
+  cargarProyectos();
 });
 
-// ==================== هشدار اولیه ====================
-window.addEventListener('load', () => {
-  console.log('⚠️ sound-make-book در حالت فایل محلی اجرا شده است.');
-  console.log('✅ برای استفاده از تمام ۹ قابلیت، سرور را با دستور "node api/index.js" اجرا کنید.');
-  console.log('🌐 سپس به آدرس http://localhost:3000 بروید.');
+// ==================== تنظیمات پیشرفته (اعمال روی TTS) ====================
+// (در نسخه فعلی، تنظیمات مستقیماً روی TTS اعمال نمی‌شود. می‌توان بعداً پیاده‌سازی کرد)
+document.getElementById('generate-advanced')?.addEventListener('click', () => {
+  alert('تنظیمات پیشرفته در این نسخه فعال نیست. از نسخه وب استفاده کنید.');
 });

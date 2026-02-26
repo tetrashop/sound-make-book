@@ -4,13 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>sound-make-book v2.0 · ۹ قابلیت</title>
-  <!-- استفاده از مسیرهای نسبی به جای / -->
   <link rel="stylesheet" href="styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* استایل‌های fallback در صورت عدم لود CSS */
-    .fallback { display: none; }
-  </style>
 </head>
 <body>
   <div class="app">
@@ -34,13 +29,11 @@
           <div class="toolbar">
             <button id="detect-lang" class="btn">🔍 تشخیص خودکار زبان</button>
             <span id="detected-lang"></span>
-            <input type="file" id="ocr-file" accept="image/*" style="display:none">
-            <button id="ocr-upload" class="btn">📸 آپلود عکس برای OCR</button>
           </div>
           <div class="preview-area">
             <h3>پیش‌نمایش صدا</h3>
-            <button id="preview-btn" class="btn">▶️ پخش ۱۰ ثانیه اول</button>
-            <audio id="preview-audio" controls></audio>
+            <button id="preview-btn" class="btn">▶️ پخش</button>
+            <button id="stop-speak" class="btn">⏹️ توقف</button>
           </div>
           <div class="music-section">
             <h3>🎵 موسیقی پس‌زمینه</h3>
@@ -60,10 +53,7 @@
       <section id="multi" class="tab-content">
         <div class="card">
           <h2>🗣️ تنظیم چندصدایی</h2>
-          <p>متن را به بخش‌ها تقسیم و برای هر بخش صدا و موسیقی جداگانه انتخاب کنید</p>
-          <div id="segments"></div>
-          <button id="add-segment" class="btn">➕ افزودن بخش</button>
-          <button id="generate-multi" class="btn btn-primary">🎬 تولید با چند صدا</button>
+          <p>این قابلیت در نسخه اندروید غیرفعال است. از نسخه وب استفاده کنید.</p>
         </div>
       </section>
 
@@ -71,9 +61,7 @@
       <section id="ocr" class="tab-content">
         <div class="card">
           <h2>📷 استخراج متن از تصویر</h2>
-          <input type="file" id="ocr-image" accept="image/*">
-          <button id="ocr-extract" class="btn">استخراج متن</button>
-          <div id="ocr-result"></div>
+          <p>این قابلیت در نسخه اندروید غیرفعال است. از نسخه وب استفاده کنید.</p>
         </div>
       </section>
 
@@ -84,10 +72,9 @@
           <div id="project-list"></div>
           <button id="refresh-projects" class="btn">🔄 به‌روزرسانی</button>
           <hr>
-          <h3>💾 ذخیره در Google Drive</h3>
-          <button id="drive-auth" class="btn">اتصال به Drive</button>
-          <input type="text" id="drive-filename" placeholder="نام فایل">
-          <button id="save-to-drive" class="btn" disabled>ذخیره در Drive</button>
+          <h3>💾 ذخیره پروژه جدید</h3>
+          <input type="text" id="project-name" placeholder="نام پروژه">
+          <button id="save-project" class="btn">ذخیره</button>
         </div>
       </section>
 
@@ -95,19 +82,15 @@
       <section id="settings" class="tab-content">
         <div class="card">
           <h2>⚙️ تنظیمات پیشرفته صدا</h2>
-          <label>سرعت گفتار (۰.۵ تا ۲): <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1"></label>
-          <label>زیر و بم صدا (-۱۰ تا +۱۰): <input type="range" id="pitch" min="-10" max="10" step="1" value="0"></label>
-          <label>فاصله بین کلمات (ms): <input type="number" id="gap" value="0"></label>
-          <button id="generate-advanced" class="btn">🎛️ تولید با تنظیمات سفارشی</button>
+          <p>این قابلیت در نسخه اندروید غیرفعال است.</p>
         </div>
       </section>
     </main>
 
     <footer>
-      <p>sound-make-book v2.0 · ۹ قابلیت · توسعه‌یافته توسط رامین اجلال</p>
+      <p>sound-make-book v2.0 · نسخه اندروید مستقل</p>
     </footer>
   </div>
-  <!-- استفاده از مسیر نسبی برای JS -->
   <script src="scripts/main.js"></script>
 </body>
 </html>

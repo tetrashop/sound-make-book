@@ -9,6 +9,39 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// ==================== بررسی وضعیت TTS هنگام بارگذاری ====================
+window.addEventListener('load', () => {
+  if (window.AndroidBridge) {
+    const status = window.AndroidBridge.getTtsStatus();
+    const statusDiv = document.createElement('div');
+    statusDiv.style.position = 'fixed';
+    statusDiv.style.bottom = '10px';
+    statusDiv.style.left = '10px';
+    statusDiv.style.background = '#f0f0f0';
+    statusDiv.style.padding = '5px 10px';
+    statusDiv.style.borderRadius = '5px';
+    statusDiv.style.fontSize = '12px';
+    statusDiv.style.zIndex = '9999';
+    statusDiv.id = 'tts-status';
+    document.body.appendChild(statusDiv);
+
+    if (status === 'ready_fa') {
+      statusDiv.innerHTML = '✅ TTS فارسی آماده';
+      statusDiv.style.background = '#d4edda';
+    } else if (status === 'ready_en') {
+      statusDiv.innerHTML = '⚠️ TTS فارسی موجود نیست، از انگلیسی استفاده می‌شود';
+      statusDiv.style.background = '#fff3cd';
+    } else if (status === 'unsupported') {
+      statusDiv.innerHTML = '❌ TTS روی گوشی نصب نیست';
+      statusDiv.style.background = '#f8d7da';
+    } else {
+      statusDiv.innerHTML = '⏳ TTS در حال آماده‌سازی...';
+    }
+  } else {
+    alert('خطا: پل ارتباطی با اندروید برقرار نیست');
+  }
+});
+
 // ==================== تشخیص خودکار زبان ====================
 document.getElementById('detect-lang')?.addEventListener('click', () => {
   const text = document.getElementById('text-input').value;
@@ -16,7 +49,6 @@ document.getElementById('detect-lang')?.addEventListener('click', () => {
     alert('لطفاً متن را وارد کنید');
     return;
   }
-  // فراخوانی تابع جاوا
   if (window.AndroidBridge) {
     window.AndroidBridge.detectLanguage(text);
   } else {
@@ -29,7 +61,7 @@ window.onLanguageDetected = function(lang) {
   document.getElementById('detected-lang').textContent = `زبان تشخیص‌داده‌شده: ${langMap[lang] || lang}`;
 };
 
-// ==================== پیش‌نمایش صدا (با TTS اندروید) ====================
+// ==================== پیش‌نمایش صدا ====================
 document.getElementById('preview-btn')?.addEventListener('click', () => {
   const text = document.getElementById('text-input').value;
   if (!text) {
@@ -38,28 +70,58 @@ document.getElementById('preview-btn')?.addEventListener('click', () => {
   }
   const utteranceId = 'preview_' + Date.now();
   if (window.AndroidBridge) {
+    // نمایش پیام در حال پخش
+    const statusDiv = document.getElementById('tts-status') || document.createElement('div');
+    statusDiv.innerHTML = '🔊 در حال پخش صدا...';
+    statusDiv.style.background = '#cce5ff';
     window.AndroidBridge.speak(text, utteranceId);
   } else {
     alert('خطا: پل ارتباطی با اندروید برقرار نیست');
   }
 });
 
+window.onSpeechDone = function(utteranceId) {
+  const statusDiv = document.getElementById('tts-status');
+  if (statusDiv) {
+    statusDiv.innerHTML = '✅ پخش تمام شد';
+    statusDiv.style.background = '#d4edda';
+    setTimeout(() => {
+      if (window.AndroidBridge) {
+        const status = window.AndroidBridge.getTtsStatus();
+        if (status === 'ready_fa') {
+          statusDiv.innerHTML = '✅ TTS فارسی آماده';
+        } else if (status === 'ready_en') {
+          statusDiv.innerHTML = '⚠️ TTS فارسی موجود نیست، از انگلیسی استفاده می‌شود';
+        } else {
+          statusDiv.innerHTML = '✅ TTS آماده';
+        }
+      }
+    }, 2000);
+  }
+};
+
+window.onSpeechError = function(errorMsg) {
+  const statusDiv = document.getElementById('tts-status');
+  if (statusDiv) {
+    statusDiv.innerHTML = '❌ خطا: ' + errorMsg;
+    statusDiv.style.background = '#f8d7da';
+  }
+  alert('خطا در پخش صدا: ' + errorMsg);
+};
+
 document.getElementById('stop-speak')?.addEventListener('click', () => {
   if (window.AndroidBridge) {
     window.AndroidBridge.stopSpeaking();
+    const statusDiv = document.getElementById('tts-status');
+    if (statusDiv) statusDiv.innerHTML = '⏹️ پخش متوقف شد';
   }
 });
 
-// ==================== OCR (غیرفعال) ====================
-document.getElementById('ocr-extract')?.addEventListener('click', () => {
-  alert('قابلیت OCR در این نسخه غیرفعال است. از نسخه وب با سرور Node.js استفاده کنید.');
-});
-
-// ==================== پروژه‌ها (ذخیره‌سازی موقت) ====================
+// ==================== پروژه‌ها ====================
 async function cargarProyectos() {
-  // در نسخه اندروید، از localStorage استفاده می‌کنیم
   const projects = JSON.parse(localStorage.getItem('projects') || '[]');
   const list = document.getElementById('project-list');
+  if (!list) return;
   list.innerHTML = projects.map(p => `
     <div class="project-item">
       <span>${p.name} (${new Date(p.createdAt).toLocaleDateString('fa-IR')})</span>
@@ -78,7 +140,6 @@ window.eliminarProyecto = function(id) {
   cargarProyectos();
 };
 
-// ذخیره پروژه
 document.getElementById('save-project')?.addEventListener('click', () => {
   const name = document.getElementById('project-name').value;
   if (!name) return alert('نام پروژه را وارد کنید');
@@ -92,10 +153,5 @@ document.getElementById('save-project')?.addEventListener('click', () => {
   projects.push(newProject);
   localStorage.setItem('projects', JSON.stringify(projects));
   cargarProyectos();
-});
-
-// ==================== تنظیمات پیشرفته (اعمال روی TTS) ====================
-// (در نسخه فعلی، تنظیمات مستقیماً روی TTS اعمال نمی‌شود. می‌توان بعداً پیاده‌سازی کرد)
-document.getElementById('generate-advanced')?.addEventListener('click', () => {
-  alert('تنظیمات پیشرفته در این نسخه فعال نیست. از نسخه وب استفاده کنید.');
+  document.getElementById('project-name').value = '';
 });

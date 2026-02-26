@@ -25,32 +25,71 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private TextToSpeech textToSpeech;
-    private Map<String, TtsCallback> ttsCallbacks = new HashMap<>();
-
-    // رابط برای دریافت نتیجه TTS
-    interface TtsCallback {
-        void onDone(String utteranceId);
-        void onError(String utteranceId);
-    }
+    private boolean ttsReady = false;
+    private String ttsStatus = "initializing";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // راه‌اندازی TextToSpeech
-        textToSpeech = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                // تنظیم زبان فارسی
-                int result = textToSpeech.setLanguage(new Locale("fa", "IR"));
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    runOnUiThread(() -> Toast.makeText(this, "زبان فارسی پشتیبانی نمی‌شود", Toast.LENGTH_LONG).show());
+        // راه‌اندازی TextToSpeech با لیسینر پیشرفته
+        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    // تنظیم زبان فارسی
+                    int result = textToSpeech.setLanguage(new Locale("fa", "IR"));
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        // اگر فارسی نبود، انگلیسی را امتحان کن
+                        result = textToSpeech.setLanguage(Locale.US);
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            ttsStatus = "unsupported";
+                            showToast("هیچ زبانی برای TTS پشتیبانی نمی‌شود");
+                        } else {
+                            ttsStatus = "ready_en";
+                            ttsReady = true;
+                        }
+                    } else {
+                        ttsStatus = "ready_fa";
+                        ttsReady = true;
+                    }
+
+                    // تنظیم پارامترهای صدا
+                    if (ttsReady) {
+                        textToSpeech.setPitch(1.0f);
+                        textToSpeech.setSpeechRate(1.0f);
+
+                        // تنظیم لیسینر برای اطلاع از پایان پخش
+                        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            @Override
+                            public void onStart(String utteranceId) {
+                                // پخش شروع شد
+                            }
+
+                            @Override
+                            public void onDone(String utteranceId) {
+                                // پخش تمام شد - می‌توان به JS اطلاع داد
+                                runOnUiThread(() -> {
+                                    String script = "window.onSpeechDone && window.onSpeechDone('" + utteranceId + "');";
+                                    webView.evaluateJavascript(script, null);
+                                });
+                            }
+
+                            @Override
+                            public void onError(String utteranceId) {
+                                // خطا در پخش
+                                runOnUiThread(() -> {
+                                    String script = "window.onSpeechError && window.onSpeechError('" + utteranceId + "');";
+                                    webView.evaluateJavascript(script, null);
+                                });
+                            }
+                        });
+                    }
                 } else {
-                    textToSpeech.setPitch(1.0f);
-                    textToSpeech.setSpeechRate(1.0f);
+                    ttsStatus = "failed";
+                    showToast("TTS اولیه‌سازی نشد");
                 }
-            } else {
-                runOnUiThread(() -> Toast.makeText(this, "TTS اولیه‌سازی نشد", Toast.LENGTH_LONG).show());
             }
         });
 
@@ -91,12 +130,38 @@ public class MainActivity extends AppCompatActivity {
     public class WebAppInterface {
         @JavascriptInterface
         public void speak(String text, String utteranceId) {
-            // تابع تولید گفتار
             runOnUiThread(() -> {
-                if (textToSpeech != null && !textToSpeech.isSpeaking()) {
-                    Bundle params = new Bundle();
-                    params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
-                    textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
+                if (!ttsReady) {
+                    // TTS آماده نیست
+                    String msg = "TTS آماده نیست. وضعیت: " + ttsStatus;
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + msg + "');", null);
+                    return;
+                }
+
+                if (textToSpeech == null) {
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('TTS مقدار null است');", null);
+                    return;
+                }
+
+                // بررسی خالی نبودن متن
+                if (text == null || text.trim().isEmpty()) {
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('متن خالی است');", null);
+                    return;
+                }
+
+                // قطع پخش قبلی
+                if (textToSpeech.isSpeaking()) {
+                    textToSpeech.stop();
+                }
+
+                // تنظیم پارامترها
+                Bundle params = new Bundle();
+                params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
+
+                // پخش صدا
+                int result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
+                if (result == TextToSpeech.ERROR) {
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('خطا در پخش صدا');", null);
                 }
             });
         }
@@ -111,50 +176,28 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public String getTtsStatus() {
+            return ttsStatus;
+        }
+
+        @JavascriptInterface
         public void detectLanguage(String text) {
-            // تشخیص زبان با روش ساده (فقط فارسی/انگلیسی)
             String lang = "fa";
             if (text.matches(".*[a-zA-Z].*")) {
                 lang = "en";
             }
-            // ارسال نتیجه به جاوااسکریپت
             final String result = lang;
             runOnUiThread(() -> {
                 String script = "window.onLanguageDetected && window.onLanguageDetected('" + result + "');";
                 webView.evaluateJavascript(script, null);
             });
         }
-
-        @JavascriptInterface
-        public void performOcr(String imageData) {
-            // در این نسخه، OCR را غیرفعال می‌کنیم (می‌توان بعداً با کتابخانه‌های جاوا اضافه کرد)
-            runOnUiThread(() -> {
-                String script = "window.onOcrResult && window.onOcrResult('" + "OCR در این نسخه غیرفعال است" + "');";
-                webView.evaluateJavascript(script, null);
-            });
-        }
-
-        @JavascriptInterface
-        public void saveProject(String name, String audioUrl, String settings) {
-            // ذخیره‌سازی پروژه (می‌توان با SharedPreferences یا فایل انجام داد)
-            // اینجا فقط یک پیغام ساده برمی‌گردانیم
-            runOnUiThread(() -> {
-                String script = "window.onProjectSaved && window.onProjectSaved('" + name + "');";
-                webView.evaluateJavascript(script, null);
-            });
-        }
-
-        @JavascriptInterface
-        public void listProjects() {
-            // برگرداندن لیست پروژه‌ها (فعلاً خالی)
-            runOnUiThread(() -> {
-                String script = "window.onProjectsListed && window.onProjectsListed('[]');";
-                webView.evaluateJavascript(script, null);
-            });
-        }
     }
 
-    // برای دریافت رویدادهای TTS
+    private void showToast(final String msg) {
+        runOnUiThread(() -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show());
+    }
+
     @Override
     protected void onDestroy() {
         if (textToSpeech != null) {

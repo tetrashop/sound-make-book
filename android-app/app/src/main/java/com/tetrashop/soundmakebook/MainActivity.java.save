@@ -1,0 +1,71 @@
+package com.tetrashop.soundmakebook;
+
+import android.os.Bundle;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.JavascriptInterface;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.content.Intent;
+import android.speech.RecognizerIntent;
+import android.widget.Toast;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewAssetLoader.AssetsPathHandler;
+
+import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class MainActivity extends AppCompatActivity {
+    private WebView webView;
+    private TextToSpeech textToSpeech;
+    private boolean ttsReady = false;
+    private String ttsStatus = "initializing";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // راه‌اندازی TextToSpeech با لیسینر پیشرفته
+        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    // تنظیم زبان فارسی
+                    int result = textToSpeech.setLanguage(new Locale("fa", "IR"));
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        // اگر فارسی نبود، انگلیسی را امتحان کن
+                        result = textToSpeech.setLanguage(Locale.US);
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            ttsStatus = "unsupported";
+                            showToast("هیچ زبانی برای TTS پشتیبانی نمی‌شود");
+                        } else {
+                            ttsStatus = "ready_en";
+                            ttsReady = true;
+                        }
+                    } else {
+                        ttsStatus = "ready_fa";
+                        ttsReady = true;
+                    }
+
+                    // تنظیم پارامترهای صدا
+                    if (ttsReady) {
+                        textToSpeech.setPitch(1.0f);
+                        textToSpeech.setSpeechRate(1.0f);
+
+                        // تنظیم لیسینر برای اطلاع از پایان پخش
+                        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            @Override
+                            public void onStart(String utteranceId) {
+                                // پخش شروع شد
+                            }
+
+                            @Override
+                            pub

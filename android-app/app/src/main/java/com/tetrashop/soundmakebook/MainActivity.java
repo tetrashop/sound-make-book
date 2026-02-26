@@ -1,99 +1,34 @@
 package com.tetrashop.soundmakebook;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
-import android.webkit.JavascriptInterface;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
-import android.content.Intent;
-import android.speech.RecognizerIntent;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewAssetLoader.AssetsPathHandler;
 
-import java.util.Locale;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
-    private TextToSpeech textToSpeech;
-    private boolean ttsReady = false;
-    private String ttsStatus = "initializing";
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // راه‌اندازی TextToSpeech با لیسینر پیشرفته
-        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS) {
-                    // تنظیم زبان فارسی
-                    int result = textToSpeech.setLanguage(new Locale("fa", "IR"));
-                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        // اگر فارسی نبود، انگلیسی را امتحان کن
-                        result = textToSpeech.setLanguage(Locale.US);
-                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            ttsStatus = "unsupported";
-                            showToast("هیچ زبانی برای TTS پشتیبانی نمی‌شود");
-                        } else {
-                            ttsStatus = "ready_en";
-                            ttsReady = true;
-                        }
-                    } else {
-                        ttsStatus = "ready_fa";
-                        ttsReady = true;
-                    }
-
-                    // تنظیم پارامترهای صدا
-                    if (ttsReady) {
-                        textToSpeech.setPitch(1.0f);
-                        textToSpeech.setSpeechRate(1.0f);
-
-                        // تنظیم لیسینر برای اطلاع از پایان پخش
-                        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                            @Override
-                            public void onStart(String utteranceId) {
-                                // پخش شروع شد
-                            }
-
-                            @Override
-                            public void onDone(String utteranceId) {
-                                // پخش تمام شد - می‌توان به JS اطلاع داد
-                                runOnUiThread(() -> {
-                                    String script = "window.onSpeechDone && window.onSpeechDone('" + utteranceId + "');";
-                                    webView.evaluateJavascript(script, null);
-                                });
-                            }
-
-                            @Override
-                            public void onError(String utteranceId) {
-                                // خطا در پخش
-                                runOnUiThread(() -> {
-                                    String script = "window.onSpeechError && window.onSpeechError('" + utteranceId + "');";
-                                    webView.evaluateJavascript(script, null);
-                                });
-                            }
-                        });
-                    }
-                } else {
-                    ttsStatus = "failed";
-                    showToast("TTS اولیه‌سازی نشد");
-                }
-            }
-        });
-
-        // تنظیم WebViewAssetLoader
         final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new AssetsPathHandler(this))
                 .build();
@@ -107,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setAllowFileAccessFromFileURLs(false);
         webSettings.setAllowUniversalAccessFromFileURLs(false);
 
-        // افزودن JavaScript Interface
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -126,58 +60,46 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
 
-    // کلاس واسط برای جاوااسکریپت
+    // تابع برای اجرای دستور eSpeak و پخش صدا
+    private void speakWithEspeak(final String text) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // اجرای دستور eSpeak و خروجی گرفتن به صورت مستقیم برای پخش
+                    // نکته: در محیط اندروید معمولی، دسترسی به espeak وجود ندارد.
+                    // این روش فقط در صورتی کار می‌کند که فایل باینری espeak در مسیر خاصی قرار داده شود.
+                    // برای سادگی، فعلاً یک پیام تست جاوااسکریپت برمی‌گردانیم تا مشخص شود این بخش نیاز به توسعه دارد.
+                    final String resultMessage = "در این نسخه از برنامه، پشتیبانی از eSpeak نیاز به راه‌اندازی اولیه دارد. لطفاً از روش TTS سیستم استفاده کنید.";
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + resultMessage + "');", null);
+                        }
+                    });
+                } catch (Exception e) {
+                    final String errorMessage = "خطا در اجرای eSpeak: " + e.getMessage();
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + errorMessage + "');", null);
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
     public class WebAppInterface {
         @JavascriptInterface
         public void speak(String text, String utteranceId) {
-            runOnUiThread(() -> {
-                if (!ttsReady) {
-                    // TTS آماده نیست
-                    String msg = "TTS آماده نیست. وضعیت: " + ttsStatus;
-                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + msg + "');", null);
-                    return;
-                }
-
-                if (textToSpeech == null) {
-                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('TTS مقدار null است');", null);
-                    return;
-                }
-
-                // بررسی خالی نبودن متن
-                if (text == null || text.trim().isEmpty()) {
-                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('متن خالی است');", null);
-                    return;
-                }
-
-                // قطع پخش قبلی
-                if (textToSpeech.isSpeaking()) {
-                    textToSpeech.stop();
-                }
-
-                // تنظیم پارامترها
-                Bundle params = new Bundle();
-                params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
-
-                // پخش صدا
-                int result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
-                if (result == TextToSpeech.ERROR) {
-                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('خطا در پخش صدا');", null);
-                }
-            });
+            // فراخوانی تابع eSpeak
+            speakWithEspeak(text);
         }
 
         @JavascriptInterface
         public void stopSpeaking() {
-            runOnUiThread(() -> {
-                if (textToSpeech != null && textToSpeech.isSpeaking()) {
-                    textToSpeech.stop();
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public String getTtsStatus() {
-            return ttsStatus;
+            // توقف پخش (اگر پیاده‌سازی شده باشد)
         }
 
         @JavascriptInterface
@@ -192,18 +114,5 @@ public class MainActivity extends AppCompatActivity {
                 webView.evaluateJavascript(script, null);
             });
         }
-    }
-
-    private void showToast(final String msg) {
-        runOnUiThread(() -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show());
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (textToSpeech != null) {
-            textToSpeech.stop();
-            textToSpeech.shutdown();
-        }
-        super.onDestroy();
     }
 }

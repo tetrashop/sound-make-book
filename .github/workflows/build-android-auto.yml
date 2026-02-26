@@ -1,0 +1,87 @@
+name: Build Android APK (Automated)
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      - name: Create local.properties
+        run: |
+          cd android-app
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Make gradlew executable
+        run: chmod +x android-app/gradlew
+
+      # تغییر mirrorها در build.gradle به صورت پویا
+      - name: Switch to stable mirrors
+        run: |
+          # تغییر build.gradle ریشه
+          sed -i 's|maven { url .*maven.aliyun.com.* }|maven { url "https://mirrors.ustc.edu.cn/termux/" }|g' android-app/build.gradle
+          sed -i 's|maven { url .*maven.aliyun.com.* }|maven { url "https://mirrors.ustc.edu.cn/google/" }|g' android-app/build.gradle
+          # همچنین می‌توانید mirrorهای دیگر را اضافه کنید
+          cat android-app/build.gradle
+
+      - name: Build APK
+        run: |
+          cd android-app
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Find APK file
+        id: find_apk
+        run: |
+          APK_PATH=$(find android-app -name "*.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ No APK file found!"
+            exit 1
+          fi
+          echo "✅ Found APK at: $APK_PATH"
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sound-make-book-android
+          path: ${{ steps.find_apk.outputs.apk_path }}
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: 📱 sound-make-book ${{ github.ref_name }}
+          body_path: android_release_notes.md
+          files: ${{ steps.find_apk.outputs.apk_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

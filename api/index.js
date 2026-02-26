@@ -76,7 +76,7 @@ const server = http.createServer(async (req, res) => {
   // من به دلیل طولانی نشدن پاسخ، کد را نمی‌آورم؛ شما همان فایل قبلی را با اضافه کردن isVercel در بالا نگه دارید.
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 sound-make-book running on port ${PORT} (${isVercel ? 'Vercel' : 'local'})`);
 });

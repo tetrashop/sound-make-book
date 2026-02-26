@@ -4,25 +4,27 @@
   --secondary: #8b5cf6;
   --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --card-bg: rgba(255, 255, 255, 0.9);
+  --text-dark: #1f2937;
+  --text-light: #ffffff;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Vazirmatn', sans-serif;
 }
 
 body {
-  font-family: 'Vazirmatn', sans-serif;
   background: var(--bg-gradient);
   min-height: 100vh;
-  color: #1f2937;
+  color: var(--text-dark);
+  padding: 20px;
 }
 
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
 }
 
 header {
@@ -43,7 +45,7 @@ h1 {
 
 .badge {
   background: var(--primary);
-  color: white;
+  color: var(--text-light);
   font-size: 0.8rem;
   padding: 5px 15px;
   border-radius: 30px;
@@ -62,13 +64,12 @@ h1 {
   background: #e2e8f0;
   border-radius: 30px;
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.2s;
 }
 
 .tab-btn.active {
   background: var(--primary);
-  color: white;
+  color: var(--text-light);
 }
 
 .tab-content {
@@ -112,7 +113,6 @@ textarea, input[type="text"], input[type="number"] {
   color: var(--primary);
   padding: 12px 25px;
   border-radius: 50px;
-  font-family: inherit;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -156,6 +156,26 @@ audio {
 
 footer {
   text-align: center;
-  color: white;
+  color: var(--text-light);
   padding: 20px;
+}
+
+.project-item {
+  background: #f1f5f9;
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+}
+
+.project-item span {
+  min-width: 150px;
+}
+
+.project-item audio {
+  flex: 1;
+  min-width: 200px;
 }

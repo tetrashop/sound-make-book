@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+⁷<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -100,21 +100,32 @@
   </button>
 </div>
 
+<!-- دکمه تست ارتباط با لاگ کنسول -->
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999;">
+  <button onclick="testAndroidBridge()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+    🔍 تست پل ارتباطی (console)
+  </button>
+</div>
+
 <script>
 function testAndroidBridge() {
+  console.log("=== تست پل ارتباطی شروع ===");
   if (window.AndroidBridge) {
-    alert("✅ پل ارتباطی فعال است!");
-    console.log("AndroidBridge exists, trying to speak...");
+    console.log("✅ AndroidBridge found!");
+    console.log("AndroidBridge type: " + typeof window.AndroidBridge);
+    console.log("AndroidBridge methods: " + Object.keys(window.AndroidBridge).join(", "));
     try {
-      window.AndroidBridge.speak("تست صدا", "test_id");
-      alert("✅ دستور speak ارسال شد");
+      console.log("Calling AndroidBridge.speak...");
+      window.AndroidBridge.speak("تست صدا", "test_id_" + Date.now());
+      console.log("✅ AndroidBridge.speak called successfully");
     } catch(e) {
-      alert("❌ خطا در ارسال speak: " + e.message);
+      console.error("❌ Error calling speak: " + e.message);
+      console.error("Error stack: " + e.stack);
     }
   } else {
-    alert("❌ پل ارتباطی فعال نیست! (window.AndroidBridge وجود ندارد)");
-    console.log("AndroidBridge is undefined");
+    console.error("❌ AndroidBridge NOT found!");
   }
+  console.log("=== تست پل ارتباطی پایان ===");
 }
 </script>
 </body>

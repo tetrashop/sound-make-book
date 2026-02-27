@@ -1,17 +1,18 @@
+
 package com.tetrashop.soundmakebook;
 
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
-import android.util.Log;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.JavascriptInterface;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.webkit.WebViewAssetLoader;
@@ -20,38 +21,32 @@ import androidx.webkit.WebViewAssetLoader.AssetsPathHandler;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "SoundMakeBook";
     private WebView webView;
     private TextToSpeech textToSpeech;
     private boolean ttsReady = false;
     private String ttsStatus = "initializing";
-    private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private Handler timeoutHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Log.d(TAG, "onCreate: initializing TTS");
-        // راه‌اندازی TextToSpeech با timeout 10 ثانیه
+        // راه‌اندازی TextToSpeech با Timeout
         textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
-                timeoutHandler.removeCallbacksAndMessages(null);
-                Log.d(TAG, "onInit: status = " + status);
+                timeoutHandler.removeCallbacksAndMessages(null); // لغو Timeout
                 if (status == TextToSpeech.SUCCESS) {
                     // تنظیم زبان فارسی
                     int result = textToSpeech.setLanguage(new Locale("fa", "IR"));
-                    Log.d(TAG, "setLanguage(fa) result = " + result);
                     if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                         ttsStatus = "fa_missing";
-                        Log.w(TAG, "Persian not supported, falling back to English");
+                        // fallback به انگلیسی
                         result = textToSpeech.setLanguage(Locale.US);
-                        Log.d(TAG, "setLanguage(en) result = " + result);
                         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                             ttsStatus = "tts_unavailable";
                             ttsReady = false;
-                            Log.e(TAG, "No language supported! TTS unavailable");
                         } else {
                             ttsReady = true;
                         }
@@ -64,23 +59,23 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     ttsStatus = "failed";
                     ttsReady = false;
-                    Log.e(TAG, "TTS initialization failed");
                 }
+                // ارسال وضعیت به جاوااسکریپت
                 sendTtsStatusToJs();
             }
         });
 
-        // Timeout: اگر بعد از 10 ثانیه TTS آماده نشد، وضعیت را خطا اعلام کن
+        // Timeout: اگر بعد از 5 ثانیه TTS آماده نشد، وضعیت را خطا اعلام کن
         timeoutHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (!ttsReady) {
                     ttsStatus = "timeout";
-                    Log.e(TAG, "TTS initialization timeout");
+                    ttsReady = false;
                     sendTtsStatusToJs();
                 }
             }
-        }, 10000); // 10 ثانیه
+        }, 5000); // 5 ثانیه
 
         // تنظیم WebViewAssetLoader
         final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
@@ -96,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setAllowFileAccessFromFileURLs(false);
         webSettings.setAllowUniversalAccessFromFileURLs(false);
 
+        // افزودن JavaScript Interface
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -128,27 +124,17 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void speak(String text, String utteranceId) {
             runOnUiThread(() -> {
-                Log.d(TAG, "speak called: text='" + text + "', id='" + utteranceId + "'");
                 if (!ttsReady) {
-                    String errorMsg = "TTS not ready: " + ttsStatus;
-                    Log.e(TAG, errorMsg);
-                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + errorMsg + "');", null);
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('TTS not ready: " + ttsStatus + "');", null);
                     return;
                 }
                 if (text == null || text.trim().isEmpty()) {
-                    Log.e(TAG, "speak: empty text");
                     webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('متن خالی است');", null);
                     return;
                 }
                 Bundle params = new Bundle();
                 params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
-                int speakResult = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
-                if (speakResult == TextToSpeech.ERROR) {
-                    Log.e(TAG, "speak returned ERROR");
-                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('خطا در پخش صدا');", null);
-                } else {
-                    Log.d(TAG, "speak called successfully, result=" + speakResult);
-                }
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
             });
         }
 
@@ -157,7 +143,6 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 if (textToSpeech != null && textToSpeech.isSpeaking()) {
                     textToSpeech.stop();
-                    Log.d(TAG, "stopSpeaking called");
                 }
             });
         }
@@ -175,7 +160,6 @@ public class MainActivity extends AppCompatActivity {
             }
             final String result = lang;
             runOnUiThread(() -> {
-                Log.d(TAG, "detectLanguage returning: " + result);
                 webView.evaluateJavascript("window.onLanguageDetected && window.onLanguageDetected('" + result + "');", null);
             });
         }

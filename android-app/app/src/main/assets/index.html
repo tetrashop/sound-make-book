@@ -1,132 +1,92 @@
-⁷<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sound-make-book v2.0 · ۹ قابلیت</title>
-  <link rel="stylesheet" href="styles/main.css">
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sound-make-book · کتاب صوتی‌ساز</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>📖 sound-make-book <span class="badge">نسخه ۲.۰ با ۹ قابلیت</span></h1>
-      <nav class="tabs">
-        <button class="tab-btn active" data-tab="editor">ویرایشگر</button>
-        <button class="tab-btn" data-tab="multi">چندصدایی</button>
-        <button class="tab-btn" data-tab="ocr">OCR تصویر</button>
-        <button class="tab-btn" data-tab="projects">داشبورد</button>
-        <button class="tab-btn" data-tab="settings">تنظیمات پیشرفته</button>
-<button onclick="testBridge()">🧪 تست پل ارتباطی</button>
-      </nav>
-    </header>
+    <div class="app">
+        <header>
+            <h1>📖 sound-make-book <span class="badge">نسخه ۲.۰</span></h1>
+            <div id="tts-status" class="tts-status">⏳ در حال آماده‌سازی TTS...</div>
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="editor">ویرایشگر</button>
+                <button class="tab-btn" data-tab="multi">چندصدایی</button>
+                <button class="tab-btn" data-tab="ocr">OCR</button>
+                <button class="tab-btn" data-tab="projects">داشبورد</button>
+                <button class="tab-btn" data-tab="settings">تنظیمات</button>
+            </nav>
+        </header>
 
-    <main>
-      <!-- تب ویرایشگر -->
-      <section id="editor" class="tab-content active">
-        <div class="card">
-          <h2>📝 ویرایشگر هوشمند</h2>
-          <textarea id="text-input" placeholder="متن خود را بنویسید..." rows="8"></textarea>
-          <div class="toolbar">
-            <button id="detect-lang" class="btn">🔍 تشخیص خودکار زبان</button>
-            <span id="detected-lang"></span>
-          </div>
-          <div class="preview-area">
-            <h3>پیش‌نمایش صدا</h3>
-            <button id="preview-btn" class="btn">▶️ پخش</button>
-            <button id="stop-speak" class="btn">⏹️ توقف</button>
-          </div>
-          <div class="music-section">
-            <h3>🎵 موسیقی پس‌زمینه</h3>
-            <select id="music-type">
-              <option value="none">بدون موسیقی</option>
-              <option value="soft_piano">پیانوی ملایم</option>
-              <option value="cinematic">سینماتیک</option>
-            </select>
-            <label>حجم موسیقی: <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.3"></label>
-          </div>
-          <button id="generate-final" class="btn btn-primary">🎧 تولید کتاب صوتی کامل</button>
-          <div class="progress" id="progress" style="display:none">در حال پردازش...</div>
-        </div>
-      </section>
+        <main>
+            <!-- تب ویرایشگر -->
+            <section id="editor" class="tab-content active">
+                <div class="card">
+                    <h2>📝 ویرایشگر متن</h2>
+                    <textarea id="text-input" placeholder="متن خود را بنویسید..." rows="8"></textarea>
+                    <div class="toolbar">
+                        <button id="detect-lang" class="btn">🔍 تشخیص زبان</button>
+                        <span id="detected-lang"></span>
+                    </div>
+                    <div class="preview-area">
+                        <h3>پیش‌نمایش</h3>
+                        <button id="preview-btn" class="btn">▶️ پخش ۱۰ ثانیه اول</button>
+                        <button id="stop-speak" class="btn">⏹️ توقف</button>
+                    </div>
+                    <button id="generate-final" class="btn btn-primary">🎧 تولید کتاب صوتی کامل</button>
+                    <div class="progress" id="progress" style="display:none">در حال پردازش...</div>
+                </div>
+            </section>
 
-      <!-- تب چندصدایی -->
-      <section id="multi" class="tab-content">
-        <div class="card">
-          <h2>🗣️ تنظیم چندصدایی</h2>
-          <p>این قابلیت در نسخه اندروید غیرفعال است. از نسخه وب استفاده کنید.</p>
-        </div>
-      </section>
+            <!-- تب چندصدایی (فقط در نسخه وب) -->
+            <section id="multi" class="tab-content">
+                <div class="card">
+                    <h2>🗣️ چندصدایی</h2>
+                    <p class="feature-note">⚠️ این قابلیت فقط در نسخه وب (با سرور Node.js) در دسترس است.</p>
+                </div>
+            </section>
 
-      <!-- تب OCR -->
-      <section id="ocr" class="tab-content">
-        <div class="card">
-          <h2>📷 استخراج متن از تصویر</h2>
-          <p>این قابلیت در نسخه اندروید غیرفعال است. از نسخه وب استفاده کنید.</p>
-        </div>
-      </section>
+            <!-- تب OCR (فقط در نسخه وب) -->
+            <section id="ocr" class="tab-content">
+                <div class="card">
+                    <h2>📷 استخراج متن از تصویر</h2>
+                    <p class="feature-note">⚠️ این قابلیت فقط در نسخه وب (با سرور Node.js) در دسترس است.</p>
+                </div>
+            </section>
 
-      <!-- تب داشبورد پروژه‌ها -->
-      <section id="projects" class="tab-content">
-        <div class="card">
-          <h2>📁 پروژه‌های ذخیره شده</h2>
-          <div id="project-list"></div>
-          <button id="refresh-projects" class="btn">🔄 به‌روزرسانی</button>
-          <hr>
-          <h3>💾 ذخیره پروژه جدید</h3>
-          <input type="text" id="project-name" placeholder="نام پروژه">
-          <button id="save-project" class="btn">ذخیره</button>
-        </div>
-      </section>
+            <!-- تب داشبورد پروژه‌ها -->
+            <section id="projects" class="tab-content">
+                <div class="card">
+                    <h2>📁 پروژه‌ها</h2>
+                    <div id="project-list"></div>
+                    <button id="refresh-projects" class="btn">🔄 به‌روزرسانی</button>
+                    <hr>
+                    <h3>💾 پروژه جدید</h3>
+                    <input type="text" id="project-name" placeholder="نام پروژه">
+                    <button id="save-project" class="btn">ذخیره</button>
+                </div>
+            </section>
 
-      <!-- تب تنظیمات پیشرفته -->
-      <section id="settings" class="tab-content">
-        <div class="card">
-          <h2>⚙️ تنظیمات پیشرفته صدا</h2>
-          <p>این قابلیت در نسخه اندروید غیرفعال است.</p>
-        </div>
-      </section>
-    </main>
+            <!-- تب تنظیمات پیشرفته -->
+            <section id="settings" class="tab-content">
+                <div class="card">
+                    <h2>⚙️ تنظیمات صدا</h2>
+                    <label>سرعت گفتار: <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1"></label>
+                    <label>زیر و بم: <input type="range" id="pitch" min="-10" max="10" step="1" value="0"></label>
+                    <label>فاصله کلمات: <input type="number" id="gap" value="0"></label>
+                    <button id="generate-advanced" class="btn">🎛️ تولید با تنظیمات سفارشی</button>
+                    <p class="feature-note">⚠️ این تنظیمات در نسخه اندروید اعمال نمی‌شوند.</p>
+                </div>
+            </section>
+        </main>
 
-    <footer>
-      <p>sound-make-book v2.0 · نسخه اندروید مستقل</p>
-    </footer>
-  </div>
-  <script src="scripts/main.js"></script>
-<!-- دکمه تست ارتباط -->
-<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999;">
-  <button onclick="testAndroidBridge()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;">
-    🔍 تست پل ارتباطی
-  </button>
-</div>
-
-<!-- دکمه تست ارتباط با لاگ کنسول -->
-<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999;">
-  <button onclick="testAndroidBridge()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;">
-    🔍 تست پل ارتباطی (console)
-  </button>
-</div>
-
-<script>
-function testAndroidBridge() {
-  console.log("=== تست پل ارتباطی شروع ===");
-  if (window.AndroidBridge) {
-    console.log("✅ AndroidBridge found!");
-    console.log("AndroidBridge type: " + typeof window.AndroidBridge);
-    console.log("AndroidBridge methods: " + Object.keys(window.AndroidBridge).join(", "));
-    try {
-      console.log("Calling AndroidBridge.speak...");
-      window.AndroidBridge.speak("تست صدا", "test_id_" + Date.now());
-      console.log("✅ AndroidBridge.speak called successfully");
-    } catch(e) {
-      console.error("❌ Error calling speak: " + e.message);
-      console.error("Error stack: " + e.stack);
-    }
-  } else {
-    console.error("❌ AndroidBridge NOT found!");
-  }
-  console.log("=== تست پل ارتباطی پایان ===");
-}
-</script>
+        <footer>
+            <p>sound-make-book · توسعه‌یافته توسط رامین اجلال</p>
+        </footer>
+    </div>
+    <script src="scripts/main.js"></script>
 </body>
 </html>

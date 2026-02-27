@@ -1,137 +1,199 @@
+// ==================== مدیریت وضعیت ====================
+let appState = {
+    currentStep: 1,
+    extractedText: '',
+    textChunks: [],
+    selectedVoice: null,
+    audioSettings: {
+        backgroundMusic: 'none',
+        musicVolume: 0.3,
+        speechRate: 1.0,
+        pitch: 0
+    }
+};
+
 // ==================== مدیریت تب‌ها ====================
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    const tabId = btn.dataset.tab;
-    document.getElementById(tabId).classList.add('active');
-  });
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const tabId = btn.dataset.tab;
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+
+// ==================== ویرایشگر متن ====================
+const textInput = document.getElementById('text-input');
+const charCount = document.getElementById('char-count');
+const wordCount = document.getElementById('word-count');
+
+if (textInput) {
+    textInput.addEventListener('input', updateTextStats);
+}
+
+function updateTextStats() {
+    if (!textInput) return;
+    const text = textInput.value;
+    const chars = text.length;
+    const words = text.split(/\s+/).filter(w => w.length > 0).length;
+    
+    if (charCount) charCount.textContent = chars.toLocaleString('fa-IR');
+    if (wordCount) wordCount.textContent = words.toLocaleString('fa-IR');
+}
+
+// ==================== تولید صدا با Web Speech API ====================
+document.getElementById('preview-btn')?.addEventListener('click', () => {
+    const text = textInput?.value;
+    if (!text) {
+        alert('لطفاً متن را وارد کنید');
+        return;
+    }
+
+    const statusDiv = document.getElementById('tts-status');
+    if (statusDiv) statusDiv.textContent = '🔄 در حال پخش...';
+
+    if (!window.speechSynthesis) {
+        if (statusDiv) statusDiv.textContent = '❌ مرورگر شما پشتیبانی نمی‌کند';
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fa-IR';
+    utterance.rate = parseFloat(document.getElementById('speech-rate')?.value || 1);
+    utterance.pitch = parseFloat(document.getElementById('pitch')?.value || 1);
+
+    // تنظیم صدا
+    const voices = window.speechSynthesis.getVoices();
+    const persianVoice = voices.find(v => v.lang.includes('fa') || v.lang.includes('ar'));
+    if (persianVoice) utterance.voice = persianVoice;
+
+    utterance.onstart = () => {
+        if (statusDiv) statusDiv.textContent = '🔊 در حال پخش...';
+    };
+
+    utterance.onend = () => {
+        if (statusDiv) statusDiv.textContent = '✅ پخش تمام شد';
+    };
+
+    utterance.onerror = (event) => {
+        if (statusDiv) statusDiv.textContent = '❌ خطا: ' + event.error;
+    };
+
+    window.speechSynthesis.speak(utterance);
+});
+
+document.getElementById('stop-speak')?.addEventListener('click', () => {
+    window.speechSynthesis?.cancel();
+    const statusDiv = document.getElementById('tts-status');
+    if (statusDiv) statusDiv.textContent = '⏹️ پخش متوقف شد';
 });
 
 // ==================== تشخیص خودکار زبان ====================
 document.getElementById('detect-lang')?.addEventListener('click', () => {
-  const text = document.getElementById('text-input').value;
-  if (!text) {
-    alert('لطفاً متن را وارد کنید');
-    return;
-  }
-  // تشخیص ساده (در نسخه واقعی با API انجام می‌شود)
-  const hasEnglish = /[a-zA-Z]/.test(text);
-  const hasPersian = /[\u0600-\u06FF]/.test(text);
-  
-  let detected = 'نامشخص';
-  if (hasPersian && !hasEnglish) detected = 'فارسی';
-  else if (hasEnglish && !hasPersian) detected = 'انگلیسی';
-  else if (hasPersian && hasEnglish) detected = 'ترکیبی (فارسی/انگلیسی)';
-  
-  document.getElementById('detected-lang').textContent = `زبان تشخیص‌داده‌شده: ${detected}`;
+    const text = textInput?.value;
+    if (!text) {
+        alert('لطفاً متن را وارد کنید');
+        return;
+    }
+
+    const hasPersian = /[\u0600-\u06FF]/.test(text);
+    const hasEnglish = /[a-zA-Z]/.test(text);
+    const detectedLang = document.getElementById('detected-lang');
+
+    if (hasPersian && hasEnglish) {
+        detectedLang.textContent = 'زبان: ترکیبی (فارسی/انگلیسی)';
+    } else if (hasPersian) {
+        detectedLang.textContent = 'زبان: فارسی';
+    } else if (hasEnglish) {
+        detectedLang.textContent = 'زبان: انگلیسی';
+    } else {
+        detectedLang.textContent = 'زبان نامشخص';
+    }
 });
 
-// ==================== OCR (شبیه‌سازی) ====================
-document.getElementById('ocr-upload')?.addEventListener('click', () => {
-  document.getElementById('ocr-file').click();
-});
+// ==================== تنظیمات پیشرفته ====================
+const speechRate = document.getElementById('speech-rate');
+const rateDisplay = document.getElementById('rate-display');
+const pitch = document.getElementById('pitch');
+const pitchDisplay = document.getElementById('pitch-display');
 
-document.getElementById('ocr-file')?.addEventListener('change', function(e) {
-  if (e.target.files[0]) {
-    alert('⚠️ در حالت فایل محلی، OCR واقعی کار نمی‌کند.\nبرای تست، یک متن آزمایشی در کادر متن قرار داده می‌شود.');
-    document.getElementById('text-input').value = 'این یک متن آزمایشی است که از تصویر استخراج شده است.\nدر نسخه سرور محلی با Node.js، OCR واقعی با Tesseract کار می‌کند.';
-  }
-});
-
-// ==================== پیش‌نمایش صدا (شبیه‌سازی) ====================
-document.getElementById('preview-btn')?.addEventListener('click', () => {
-  const text = document.getElementById('text-input').value;
-  if (!text) {
-    alert('لطفاً متن را وارد کنید');
-    return;
-  }
-  
-  alert('🔊 در حالت فایل محلی، پیش‌نمایش صدا فقط با سرور Node.js کار می‌کند.\nبرای استفاده از قابلیت‌های کامل، سرور را با دستور "node api/index.js" اجرا کنید.');
-});
-
-// ==================== تولید نهایی (شبیه‌سازی) ====================
-document.getElementById('generate-final')?.addEventListener('click', () => {
-  const text = document.getElementById('text-input').value;
-  if (!text) {
-    alert('لطفاً متن را وارد کنید');
-    return;
-  }
-  
-  document.getElementById('progress').style.display = 'block';
-  document.getElementById('progress').textContent = '⏳ در حال اتصال به سرور...';
-  
-  setTimeout(() => {
-    document.getElementById('progress').style.display = 'none';
-    alert('⚠️ در حالت فایل محلی، تولید صدا فقط با سرور Node.js کار می‌کند.\nبرای استفاده از قابلیت‌های کامل، سرور را با دستور "node api/index.js" اجرا کنید.');
-  }, 1500);
-});
-
-// ==================== بخش چندصدایی (شبیه‌سازی) ====================
-let segmentCount = 1;
-document.getElementById('add-segment')?.addEventListener('click', () => {
-  const container = document.getElementById('segments');
-  const div = document.createElement('div');
-  div.innerHTML = `
-    <h4>بخش ${segmentCount}</h4>
-    <textarea class="segment-text" placeholder="متن این بخش..." rows="3"></textarea>
-    <select class="segment-voice">
-      <option value="fa">فارسی</option>
-      <option value="en">انگلیسی</option>
-    </select>
-    <button class="remove-segment btn" style="background:#ef4444; color:white; border:none; padding:5px 10px;">✖ حذف</button>
-  `;
-  container.appendChild(div);
-  
-  div.querySelector('.remove-segment').addEventListener('click', () => div.remove());
-  segmentCount++;
-});
-
-document.getElementById('generate-multi')?.addEventListener('click', () => {
-  alert('⚠️ در حالت فایل محلی، تولید چندصدایی فقط با سرور Node.js کار می‌کند.');
-});
-
-// ==================== پروژه‌ها (شبیه‌سازی) ====================
-function cargarProyectos() {
-  const list = document.getElementById('project-list');
-  // در حالت فایل محلی، پروژه‌های آزمایشی نمایش داده می‌شوند
-  list.innerHTML = `
-    <div class="project-item">
-      <span>📁 پروژه آزمایشی ۱</span>
-      <audio controls src=""></audio>
-      <button onclick="alert('در حالت فایل محلی، این قابلیت غیرفعال است.')">🗑️ حذف</button>
-    </div>
-    <div class="project-item">
-      <span>📁 پروژه آزمایشی ۲</span>
-      <audio controls src=""></audio>
-      <button onclick="alert('در حالت فایل محلی، این قابلیت غیرفعال است.')">🗑️ حذف</button>
-    </div>
-    <p style="color: #ef4444; margin-top: 10px;">⚠️ برای ذخیره و مدیریت واقعی پروژه‌ها، سرور Node.js را اجرا کنید.</p>
-  `;
+if (speechRate) {
+    speechRate.addEventListener('input', () => {
+        if (rateDisplay) rateDisplay.textContent = speechRate.value + 'x';
+    });
 }
 
-document.getElementById('refresh-projects')?.addEventListener('click', cargarProyectos);
-cargarProyectos();
+if (pitch) {
+    pitch.addEventListener('input', () => {
+        if (pitchDisplay) pitchDisplay.textContent = pitch.value;
+    });
+}
 
-// ==================== تنظیمات پیشرفته (شبیه‌سازی) ====================
-document.getElementById('generate-advanced')?.addEventListener('click', () => {
-  const text = document.getElementById('text-input').value;
-  if (!text) {
-    alert('لطفاً متن را وارد کنید');
-    return;
-  }
-  
-  const speed = document.getElementById('speed').value;
-  const pitch = document.getElementById('pitch').value;
-  const gap = document.getElementById('gap').value;
-  
-  alert(`🔧 تنظیمات پیشرفته:\nسرعت: ${speed}\nزیر و بم: ${pitch}\nفاصله: ${gap}\n\n⚠️ تولید واقعی با این تنظیمات فقط با سرور Node.js کار می‌کند.`);
+// ==================== پروژه‌ها (ذخیره در localStorage) ====================
+function loadProjects() {
+    const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+    const list = document.getElementById('project-list');
+    if (!list) return;
+
+    if (projects.length === 0) {
+        list.innerHTML = '<p class="feature-note">📭 پروژه‌ای ذخیره نشده است</p>';
+        return;
+    }
+
+    list.innerHTML = projects.map(p => `
+        <div class="project-item">
+            <span>📁 ${p.name}</span>
+            <span>${new Date(p.createdAt).toLocaleDateString('fa-IR')}</span>
+            <button class="btn" onclick="deleteProject('${p.id}')" style="background:#ef4444; color:white; border:none;">🗑️ حذف</button>
+        </div>
+    `).join('');
+}
+
+window.deleteProject = function(id) {
+    let projects = JSON.parse(localStorage.getItem('projects') || '[]');
+    projects = projects.filter(p => p.id !== id);
+    localStorage.setItem('projects', JSON.stringify(projects));
+    loadProjects();
+};
+
+document.getElementById('save-project')?.addEventListener('click', () => {
+    const name = document.getElementById('project-name')?.value;
+    if (!name) {
+        alert('نام پروژه را وارد کنید');
+        return;
+    }
+
+    const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+    const newProject = {
+        id: Date.now().toString(),
+        name: name,
+        createdAt: new Date().toISOString(),
+        settings: appState.audioSettings
+    };
+    
+    projects.push(newProject);
+    localStorage.setItem('projects', JSON.stringify(projects));
+    loadProjects();
+    if (document.getElementById('project-name')) document.getElementById('project-name').value = '';
 });
 
-// ==================== هشدار اولیه ====================
-window.addEventListener('load', () => {
-  console.log('⚠️ sound-make-book در حالت فایل محلی اجرا شده است.');
-  console.log('✅ برای استفاده از تمام ۹ قابلیت، سرور را با دستور "node api/index.js" اجرا کنید.');
-  console.log('🌐 سپس به آدرس http://localhost:3000 بروید.');
+document.getElementById('refresh-projects')?.addEventListener('click', loadProjects);
+
+// بارگذاری اولیه
+document.addEventListener('DOMContentLoaded', () => {
+    updateTextStats();
+    loadProjects();
+    
+    // نمایش وضعیت اولیه TTS
+    const statusDiv = document.getElementById('tts-status');
+    if (statusDiv) {
+        if (window.speechSynthesis) {
+            statusDiv.textContent = '✅ آماده به کار';
+        } else {
+            statusDiv.textContent = '⚠️ Web Speech API در دسترس نیست';
+        }
+    }
 });

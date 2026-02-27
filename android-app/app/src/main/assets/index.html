@@ -17,6 +17,7 @@
         <button class="tab-btn" data-tab="ocr">OCR تصویر</button>
         <button class="tab-btn" data-tab="projects">داشبورد</button>
         <button class="tab-btn" data-tab="settings">تنظیمات پیشرفته</button>
+<button onclick="testBridge()">🧪 تست پل ارتباطی</button>
       </nav>
     </header>
 
@@ -92,5 +93,29 @@
     </footer>
   </div>
   <script src="scripts/main.js"></script>
+<!-- دکمه تست ارتباط -->
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999;">
+  <button onclick="testAndroidBridge()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+    🔍 تست پل ارتباطی
+  </button>
+</div>
+
+<script>
+function testAndroidBridge() {
+  if (window.AndroidBridge) {
+    alert("✅ پل ارتباطی فعال است!");
+    console.log("AndroidBridge exists, trying to speak...");
+    try {
+      window.AndroidBridge.speak("تست صدا", "test_id");
+      alert("✅ دستور speak ارسال شد");
+    } catch(e) {
+      alert("❌ خطا در ارسال speak: " + e.message);
+    }
+  } else {
+    alert("❌ پل ارتباطی فعال نیست! (window.AndroidBridge وجود ندارد)");
+    console.log("AndroidBridge is undefined");
+  }
+}
+</script>
 </body>
 </html>

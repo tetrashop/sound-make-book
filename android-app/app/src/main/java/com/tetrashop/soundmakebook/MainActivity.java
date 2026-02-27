@@ -1,20 +1,20 @@
 package com.tetrashop.soundmakebook;
+package com.tetrashop.soundmakebook;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.webkit.JavascriptInterface;
+import android.speech.tts.TextToSpeech;  // <-- اضافه کن
+import java.util.Locale;                 // <-- اضافه کن
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.JavascriptInterface;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewAssetLoader.AssetsPathHandler;
-import android.webkit.WebChromeClient;
 
 import java.io.BufferedReader;
 import java.io.File;

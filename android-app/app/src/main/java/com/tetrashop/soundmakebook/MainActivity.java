@@ -91,30 +91,77 @@ webView.setWebChromeClient(new WebChromeClient());
             }
         }).start();
     }
+public class WebAppInterface {
+    private TextToSpeech textToSpeech;
+    private boolean ttsReady = false;
+    private String ttsStatus = "initializing";
 
-    public class WebAppInterface {
-        @JavascriptInterface
-        public void speak(String text, String utteranceId) {
-            // فراخوانی تابع eSpeak
-            speakWithEspeak(text);
-        }
-
-        @JavascriptInterface
-        public void stopSpeaking() {
-            // توقف پخش (اگر پیاده‌سازی شده باشد)
-        }
-
-        @JavascriptInterface
-        public void detectLanguage(String text) {
-            String lang = "fa";
-            if (text.matches(".*[a-zA-Z].*")) {
-                lang = "en";
+    public WebAppInterface() {
+        textToSpeech = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    // تنظیم زبان فارسی
+                    int result = textToSpeech.setLanguage(new Locale("fa", "IR"));
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        ttsStatus = "fa_missing";
+                        // fallback به انگلیسی
+                        textToSpeech.setLanguage(Locale.US);
+                        ttsReady = true;
+                    } else {
+                        ttsStatus = "fa_ready";
+                        ttsReady = true;
+                    }
+                    textToSpeech.setPitch(1.0f);
+                    textToSpeech.setSpeechRate(1.0f);
+                } else {
+                    ttsStatus = "failed";
+                }
             }
-            final String result = lang;
-            runOnUiThread(() -> {
-                String script = "window.onLanguageDetected && window.onLanguageDetected('" + result + "');";
-                webView.evaluateJavascript(script, null);
-            });
-        }
+        });
     }
+
+    @JavascriptInterface
+    public void speak(String text, String utteranceId) {
+        runOnUiThread(() -> {
+            if (!ttsReady) {
+                webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('TTS not ready: " + ttsStatus + "');", null);
+                return;
+            }
+            if (text == null || text.trim().isEmpty()) {
+                webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('متن خالی است');", null);
+                return;
+            }
+            Bundle params = new Bundle();
+            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
+        });
+    }
+
+    @JavascriptInterface
+    public void stopSpeaking() {
+        runOnUiThread(() -> {
+            if (textToSpeech != null && textToSpeech.isSpeaking()) {
+                textToSpeech.stop();
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public String getTtsStatus() {
+        return ttsStatus;
+    }
+
+    @JavascriptInterface
+    public void detectLanguage(String text) {
+        String lang = "fa";
+        if (text.matches(".*[a-zA-Z].*")) {
+            lang = "en";
+        }
+        final String result = lang;
+        runOnUiThread(() -> {
+            webView.evaluateJavascript("window.onLanguageDetected && window.onLanguageDetected('" + result + "');", null);
+        });
+    }
+}
 }

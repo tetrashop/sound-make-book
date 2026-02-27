@@ -1,3 +1,13 @@
+console.log("✅ main.js loaded");
+alert("✅ JavaScript loaded");
+window.testBridge = function() {
+    if (window.AndroidBridge) {
+        alert("✅ AndroidBridge found");
+        window.AndroidBridge.speak("تست", "test_id");
+    } else {
+        alert("❌ AndroidBridge NOT found");
+    }
+}
 // ==================== مدیریت تب‌ها ====================
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {

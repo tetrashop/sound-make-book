@@ -1,103 +1,38 @@
 package com.tetrashop.soundmakebook;
-package com.tetrashop.soundmakebook;
 
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;  // <-- اضافه کن
-import java.util.Locale;                 // <-- اضافه کن
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.JavascriptInterface;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewAssetLoader.AssetsPathHandler;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
-    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private TextToSpeech textToSpeech;
+    private boolean ttsReady = false;
+    private String ttsStatus = "initializing";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", new AssetsPathHandler(this))
-                .build();
-
-        webView = findViewById(R.id.webview);
-        WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-webView.setWebChromeClient(new WebChromeClient());
-        webSettings.setAllowFileAccess(false);
-        webSettings.setAllowContentAccess(false);
-        webSettings.setAllowFileAccessFromFileURLs(false);
-        webSettings.setAllowUniversalAccessFromFileURLs(false);
-
-        webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
-
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
-            }
-
-            @Override
-            @SuppressWarnings("deprecation")
-            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-                return assetLoader.shouldInterceptRequest(android.net.Uri.parse(url));
-            }
-        });
-
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
-    }
-
-    // تابع برای اجرای دستور eSpeak و پخش صدا
-    private void speakWithEspeak(final String text) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // اجرای دستور eSpeak و خروجی گرفتن به صورت مستقیم برای پخش
-                    // نکته: در محیط اندروید معمولی، دسترسی به espeak وجود ندارد.
-                    // این روش فقط در صورتی کار می‌کند که فایل باینری espeak در مسیر خاصی قرار داده شود.
-                    // برای سادگی، فعلاً یک پیام تست جاوااسکریپت برمی‌گردانیم تا مشخص شود این بخش نیاز به توسعه دارد.
-                    final String resultMessage = "در این نسخه از برنامه، پشتیبانی از eSpeak نیاز به راه‌اندازی اولیه دارد. لطفاً از روش TTS سیستم استفاده کنید.";
-                    mainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + resultMessage + "');", null);
-                        }
-                    });
-                } catch (Exception e) {
-                    final String errorMessage = "خطا در اجرای eSpeak: " + e.getMessage();
-                    mainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('" + errorMessage + "');", null);
-                        }
-                    });
-                }
-            }
-        }).start();
-    }
-public class WebAppInterface {
-    private TextToSpeech textToSpeech;
-    private boolean ttsReady = false;
-    private String ttsStatus = "initializing";
-
-    public WebAppInterface() {
-        textToSpeech = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+        // راه‌اندازی TextToSpeech
+        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
@@ -119,49 +54,92 @@ public class WebAppInterface {
                 }
             }
         });
-    }
 
-    @JavascriptInterface
-    public void speak(String text, String utteranceId) {
-        runOnUiThread(() -> {
-            if (!ttsReady) {
-                webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('TTS not ready: " + ttsStatus + "');", null);
-                return;
+        // تنظیم WebViewAssetLoader
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new AssetsPathHandler(this))
+                .build();
+
+        webView = findViewById(R.id.webview);
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setAllowFileAccess(false);
+        webSettings.setAllowContentAccess(false);
+        webSettings.setAllowFileAccessFromFileURLs(false);
+        webSettings.setAllowUniversalAccessFromFileURLs(false);
+
+        // افزودن JavaScript Interface
+        webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
             }
-            if (text == null || text.trim().isEmpty()) {
-                webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('متن خالی است');", null);
-                return;
+
+            @Override
+            @SuppressWarnings("deprecation")
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                return assetLoader.shouldInterceptRequest(android.net.Uri.parse(url));
             }
-            Bundle params = new Bundle();
-            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
         });
+
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
 
-    @JavascriptInterface
-    public void stopSpeaking() {
-        runOnUiThread(() -> {
-            if (textToSpeech != null && textToSpeech.isSpeaking()) {
-                textToSpeech.stop();
-            }
-        });
-    }
-
-    @JavascriptInterface
-    public String getTtsStatus() {
-        return ttsStatus;
-    }
-
-    @JavascriptInterface
-    public void detectLanguage(String text) {
-        String lang = "fa";
-        if (text.matches(".*[a-zA-Z].*")) {
-            lang = "en";
+    // کلاس واسط برای جاوااسکریپت
+    public class WebAppInterface {
+        @JavascriptInterface
+        public void speak(String text, String utteranceId) {
+            runOnUiThread(() -> {
+                if (!ttsReady) {
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('TTS not ready: " + ttsStatus + "');", null);
+                    return;
+                }
+                if (text == null || text.trim().isEmpty()) {
+                    webView.evaluateJavascript("window.onSpeechError && window.onSpeechError('متن خالی است');", null);
+                    return;
+                }
+                Bundle params = new Bundle();
+                params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
+            });
         }
-        final String result = lang;
-        runOnUiThread(() -> {
-            webView.evaluateJavascript("window.onLanguageDetected && window.onLanguageDetected('" + result + "');", null);
-        });
+
+        @JavascriptInterface
+        public void stopSpeaking() {
+            runOnUiThread(() -> {
+                if (textToSpeech != null && textToSpeech.isSpeaking()) {
+                    textToSpeech.stop();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String getTtsStatus() {
+            return ttsStatus;
+        }
+
+        @JavascriptInterface
+        public void detectLanguage(String text) {
+            String lang = "fa";
+            if (text.matches(".*[a-zA-Z].*")) {
+                lang = "en";
+            }
+            final String result = lang;
+            runOnUiThread(() -> {
+                webView.evaluateJavascript("window.onLanguageDetected && window.onLanguageDetected('" + result + "');", null);
+            });
+        }
     }
-}
+
+    @Override
+    protected void onDestroy() {
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
+        super.onDestroy();
+    }
 }

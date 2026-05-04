@@ -51,7 +51,6 @@ class AdvancedTTS extends EventEmitter {
             const cmd = `espeak -v ${voice} -s ${Math.round(rate * 100)} -p ${pitch} -g ${gap} "${text.replace(/"/g, '\\"')}" -w ${outWav}`;
             exec(cmd, (err) => {
                 if (err) return reject(err);
-                // بدون ffmpeg، فایل wav را برمی‌گردانیم
                 resolve({ path: outWav, url: `/audio-cache/${path.basename(outWav)}` });
             });
         });

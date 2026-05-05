@@ -82,3 +82,59 @@ document.getElementById('save-project')?.addEventListener('click', () => {
     document.getElementById('project-name').value = '';
 });
 loadProjects();
+
+// =============== Voice Cloning محلی ===============
+const uploadBtn = document.getElementById('upload-profile-btn');
+const clearBtn = document.getElementById('clear-profile-btn');
+const speakBtn = document.getElementById('speak-with-profile-btn');
+const fileInput = document.getElementById('voice-sample-file');
+const profileStatus = document.getElementById('profile-status');
+const audioPlayer = document.getElementById('profile-audio-player');
+const cloneText = document.getElementById('clone-local-text');
+
+uploadBtn?.addEventListener('click', async () => {
+    const file = fileInput?.files[0];
+    if (!file) return alert('لطفاً فایل صوتی را انتخاب کنید');
+    const formData = new FormData();
+    formData.append('sample', file);
+    if (profileStatus) profileStatus.innerHTML = '⏳ در حال تحلیل نمونه صدا...';
+    try {
+        const res = await fetch('/api/upload-voice-profile', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok && profileStatus) {
+            profileStatus.innerHTML = `✅ صدا تحلیل شد! (pitch=${data.profile.pitch}, speed=${data.profile.speed})`;
+        } else if (profileStatus) {
+            profileStatus.innerHTML = '❌ خطا: ' + (data.error || 'مشخص نیست');
+        }
+    } catch(e) {
+        if (profileStatus) profileStatus.innerHTML = '❌ خطا در ارتباط با سرور';
+    }
+});
+
+clearBtn?.addEventListener('click', async () => {
+    try {
+        await fetch('/api/clear-voice-profile', { method: 'POST' });
+        if (profileStatus) profileStatus.innerHTML = '🗑️ پروفایل صدا پاک شد.';
+    } catch(e) {}
+});
+
+speakBtn?.addEventListener('click', async () => {
+    const text = cloneText?.value;
+    if (!text) return alert('متن را وارد کنید');
+    if (audioPlayer) audioPlayer.innerHTML = '⏳ در حال تولید صدا...';
+    try {
+        const res = await fetch('/api/synthesize-with-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        if (res.ok && audioPlayer) {
+            audioPlayer.innerHTML = `<audio controls autoplay src="${data.url}"></audio>`;
+        } else if (audioPlayer) {
+            audioPlayer.innerHTML = '❌ خطا: ' + (data.error || 'پروفایل صدا یافت نشد');
+        }
+    } catch(e) {
+        if (audioPlayer) audioPlayer.innerHTML = '❌ خطا در ارتباط با سرور';
+    }
+});

@@ -13,6 +13,7 @@
             <h1>📖 sound-make-book <span class="badge">نسخه طلایی</span></h1>
             <div class="tts-status" id="tts-status">✅ آماده به کار</div>
             <nav class="tabs">
+                <button class="tab-btn" data-tab="voice-clone-local">🎤 Clone صدا</button>
                 <button class="tab-btn active" data-tab="editor">📝 ویرایشگر</button>
                 <button class="tab-btn" data-tab="voice-variety">🎭 صدای متنوع</button>
                 <button class="tab-btn" data-tab="projects">📁 پروژه‌ها</button>
@@ -74,3 +75,17 @@
     <script src="/scripts/main.js"></script>
 </body>
 </html>
+<section id="voice-clone-local" class="tab-content">
+    <div class="card">
+        <h2>🎤 تقلید صدای شخص (بدون اینترنت)</h2>
+        <p>یک فایل صوتی کوتاه (۳-۱۰ ثانیه، wav/mp3) از صدای خود آپلود کنید.</p>
+        <input type="file" id="voice-sample-file" accept="audio/*">
+        <button id="upload-profile-btn" class="btn">📤 تحلیل و ذخیره صدا</button>
+        <button id="clear-profile-btn" class="btn" style="background:#ccc;">🗑️ حذف پروفایل</button>
+        <div id="profile-status"></div>
+        <hr>
+        <textarea id="clone-local-text" placeholder="متن کتاب را وارد کنید..." rows="6"></textarea>
+        <button id="speak-with-profile-btn" class="btn btn-primary">🗣️ تولید گفتار با صدای شخصی</button>
+        <div id="profile-audio-player"></div>
+    </div>
+</section>

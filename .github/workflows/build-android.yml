@@ -1,0 +1,86 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      - name: Install required SDK components
+        run: |
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.1" "platforms;android-34"
+
+      - name: Create local.properties
+        run: |
+          cd android-app
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Make gradlew executable
+        run: chmod +x android-app/gradlew
+
+      - name: Build APK
+        run: |
+          cd android-app
+          ./gradlew assembleRelease
+
+      - name: Sign APK with debug key
+        run: |
+          cd android-app/app/build/outputs/apk/release/
+          # پیدا کردن مسیر apksigner (نسخه build-tools نصب شده)
+          APKSIGNER="$ANDROID_HOME/build-tools/33.0.1/apksigner"
+          # ایجاد یک کلید debug موقت
+          keytool -genkey -v -keystore debug.keystore -alias debug -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=Debug"
+          # امضای APK با کلید debug
+          $APKSIGNER sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android --out app-release-signed.apk app-release-unsigned.apk
+          # حذف فایل unsigned و rename signed به نام اصلی (اختیاری)
+          rm app-release-unsigned.apk
+          mv app-release-signed.apk app-release.apk
+
+      - name: Find APK file
+        id: find_apk
+        run: |
+          APK_PATH=$(find android-app -name "app-release.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ Signed APK not found!"
+            exit 1
+          fi
+          echo "✅ Found signed APK at: $APK_PATH"
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sound-make-book-android
+          path: ${{ steps.find_apk.outputs.apk_path }}
+
+      - name: Create Release using GitHub CLI
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK_PATH="${{ steps.find_apk.outputs.apk_path }}"
+          echo "📦 Creating release for tag: ${{ github.ref_name }} with APK: $APK_PATH"
+          gh release create ${{ github.ref_name }} \
+            --title "📱 sound-make-book ${{ github.ref_name }}" \
+            --notes-file android_release_notes.md \
+            "$APK_PATH" || echo "⚠️ Release creation failed but continuing"

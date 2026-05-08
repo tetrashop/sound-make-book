@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sound-make-book v2.0 · ۹ قابلیت</title>
+  <!-- استفاده از مسیرهای نسبی به جای / -->
+  <link rel="stylesheet" href="styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* استایل‌های fallback در صورت عدم لود CSS */
+    .fallback { display: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>📖 sound-make-book <span class="badge">نسخه ۲.۰ با ۹ قابلیت</span></h1>
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="editor">ویرایشگر</button>
+        <button class="tab-btn" data-tab="multi">چندصدایی</button>
+        <button class="tab-btn" data-tab="ocr">OCR تصویر</button>
+        <button class="tab-btn" data-tab="projects">داشبورد</button>
+        <button class="tab-btn" data-tab="settings">تنظیمات پیشرفته</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- تب ویرایشگر -->
+      <section id="editor" class="tab-content active">
+        <div class="card">
+          <h2>📝 ویرایشگر هوشمند</h2>
+          <textarea id="text-input" placeholder="متن خود را بنویسید..." rows="8"></textarea>
+          <div class="toolbar">
+            <button id="detect-lang" class="btn">🔍 تشخیص خودکار زبان</button>
+            <span id="detected-lang"></span>
+            <input type="file" id="ocr-file" accept="image/*" style="display:none">
+            <button id="ocr-upload" class="btn">📸 آپلود عکس برای OCR</button>
+          </div>
+          <div class="preview-area">
+            <h3>پیش‌نمایش صدا</h3>
+            <button id="preview-btn" class="btn">▶️ پخش ۱۰ ثانیه اول</button>
+            <audio id="preview-audio" controls></audio>
+          </div>
+          <div class="music-section">
+            <h3>🎵 موسیقی پس‌زمینه</h3>
+            <select id="music-type">
+              <option value="none">بدون موسیقی</option>
+              <option value="soft_piano">پیانوی ملایم</option>
+              <option value="cinematic">سینماتیک</option>
+            </select>
+            <label>حجم موسیقی: <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.3"></label>
+          </div>
+          <button id="generate-final" class="btn btn-primary">🎧 تولید کتاب صوتی کامل</button>
+          <div class="progress" id="progress" style="display:none">در حال پردازش...</div>
+        </div>
+      </section>
+
+      <!-- تب چندصدایی -->
+      <section id="multi" class="tab-content">
+        <div class="card">
+          <h2>🗣️ تنظیم چندصدایی</h2>
+          <p>متن را به بخش‌ها تقسیم و برای هر بخش صدا و موسیقی جداگانه انتخاب کنید</p>
+          <div id="segments"></div>
+          <button id="add-segment" class="btn">➕ افزودن بخش</button>
+          <button id="generate-multi" class="btn btn-primary">🎬 تولید با چند صدا</button>
+        </div>
+      </section>
+
+      <!-- تب OCR -->
+      <section id="ocr" class="tab-content">
+        <div class="card">
+          <h2>📷 استخراج متن از تصویر</h2>
+          <input type="file" id="ocr-image" accept="image/*">
+          <button id="ocr-extract" class="btn">استخراج متن</button>
+          <div id="ocr-result"></div>
+        </div>
+      </section>
+
+      <!-- تب داشبورد پروژه‌ها -->
+      <section id="projects" class="tab-content">
+        <div class="card">
+          <h2>📁 پروژه‌های ذخیره شده</h2>
+          <div id="project-list"></div>
+          <button id="refresh-projects" class="btn">🔄 به‌روزرسانی</button>
+          <hr>
+          <h3>💾 ذخیره در Google Drive</h3>
+          <button id="drive-auth" class="btn">اتصال به Drive</button>
+          <input type="text" id="drive-filename" placeholder="نام فایل">
+          <button id="save-to-drive" class="btn" disabled>ذخیره در Drive</button>
+        </div>
+      </section>
+
+      <!-- تب تنظیمات پیشرفته -->
+      <section id="settings" class="tab-content">
+        <div class="card">
+          <h2>⚙️ تنظیمات پیشرفته صدا</h2>
+          <label>سرعت گفتار (۰.۵ تا ۲): <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1"></label>
+          <label>زیر و بم صدا (-۱۰ تا +۱۰): <input type="range" id="pitch" min="-10" max="10" step="1" value="0"></label>
+          <label>فاصله بین کلمات (ms): <input type="number" id="gap" value="0"></label>
+          <button id="generate-advanced" class="btn">🎛️ تولید با تنظیمات سفارشی</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>sound-make-book v2.0 · ۹ قابلیت · توسعه‌یافته توسط رامین اجلال</p>
+    </footer>
+  </div>
+  <!-- استفاده از مسیر نسبی برای JS -->
+  <script src="scripts/main.js"></script>
+</body>
+</html>

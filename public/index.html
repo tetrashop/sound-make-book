@@ -2,90 +2,75 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sound-make-book · نسخه طلایی</title>
-    <link rel="stylesheet" href="/styles/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>sound-make-book | طلایی</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app">
+    <div class="app-container">
         <header>
-            <h1>📖 sound-make-book <span class="badge">نسخه طلایی</span></h1>
-            <div class="tts-status" id="tts-status">✅ آماده به کار</div>
-            <nav class="tabs">
-                <button class="tab-btn" data-tab="voice-clone-local">🎤 Clone صدا</button>
-                <button class="tab-btn active" data-tab="editor">📝 ویرایشگر</button>
-                <button class="tab-btn" data-tab="voice-variety">🎭 صدای متنوع</button>
-                <button class="tab-btn" data-tab="projects">📁 پروژه‌ها</button>
-                <button class="tab-btn" data-tab="settings">⚙️ تنظیمات</button>
-            </nav>
+            <h1>🎧 sound-make-book <span class="badge">نسخه طلایی</span></h1>
+            <p>تبدیل متن به صدای طبیعی با قابلیت تقلید صدا</p>
         </header>
-
         <main>
-            <!-- تب ویرایشگر -->
-            <section id="editor" class="tab-content active">
-                <div class="card">
-                    <h2>✏️ ویرایشگر هوشمند متن</h2>
-                    <textarea id="text-input" placeholder="متن خود را بنویسید..." rows="8"></textarea>
-                    <button id="preview-btn" class="btn btn-primary">▶️ پیش‌نمایش صدا</button>
-                    <button id="stop-speak" class="btn">⏹️ توقف</button>
-                    <div id="preview-status"></div>
+            <section class="card editor-card">
+                <div class="card-header">
+                    <h2>✍️ ویرایشگر هوشمند متن</h2>
+                    <div class="voice-indicator">🔊 آماده به کار</div>
+                </div>
+                <textarea id="textInput" rows="5" placeholder="متن خود را بنویسید... (فارسی یا انگلیسی)"></textarea>
+                <div class="button-group">
+                    <button id="previewBtn" class="btn primary">▶ پیش‌نمایش صدا</button>
+                    <button id="stopBtn" class="btn secondary">⏹ توقف</button>
                 </div>
             </section>
 
-            <!-- تب صدای متنوع -->
-            <section id="voice-variety" class="tab-content">
-                <div class="card">
-                    <h2>🎭 انتخاب صدای متنوع (بدون اینترنت)</h2>
-                    <p>با تغییر زیر و بم و سرعت، صداهای مختلف را بشنوید.</p>
-                    <label>🎙️ نوع صدا:</label>
-                    <select id="voice-type">
-                        <option value="normal">معمولی</option>
-                        <option value="low">بم (عمیق)</option>
-                        <option value="high">زیر (کودکانه)</option>
-                        <option value="fast">سریع</option>
-                        <option value="slow">آهسته</option>
+            <section class="card settings-card">
+                <h2>⚙️ تنظیمات صدا</h2>
+                <div class="slider-group">
+                    <label>سرعت گفتار: <span id="speedValue">1.0</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.01" value="1.0">
+                </div>
+                <div class="slider-group">
+                    <label>زیر و بم (Pitch): <span id="pitchValue">1.0</span></label>
+                    <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.01" value="1.0">
+                </div>
+                <div class="voice-selector">
+                    <label>نوع صدا:</label>
+                    <select id="voiceSelect">
+                        <option value="default">معمولی (پیش‌فرض)</option>
                     </select>
-                    <textarea id="variety-text" placeholder="متن خود را وارد کنید..." rows="5"></textarea>
-                    <button id="preview-variety-btn" class="btn btn-primary">🎙️ تست صدا</button>
-                    <div id="variety-status" style="margin-top:15px"></div>
                 </div>
             </section>
 
-            <!-- تب پروژه‌ها -->
-            <section id="projects" class="tab-content">
-                <div class="card">
-                    <h2>📁 پروژه‌های ذخیره شده</h2>
-                    <div id="project-list"></div>
-                    <input type="text" id="project-name" placeholder="نام پروژه">
-                    <button id="save-project" class="btn">💾 ذخیره پروژه</button>
+            <section class="card projects-card">
+                <h2>📁 پروژه‌های ذخیره شده</h2>
+                <div id="projectsList" class="projects-list">
+                    <div class="empty-message">هیچ پروژه‌ای وجود ندارد.</div>
+                </div>
+                <div class="new-project">
+                    <input type="text" id="projectName" placeholder="نام پروژه جدید">
+                    <button id="saveProjectBtn" class="btn success">💾 ذخیره پروژه</button>
                 </div>
             </section>
 
-            <!-- تب تنظیمات -->
-            <section id="settings" class="tab-content">
-                <div class="card">
-                    <h2>⚙️ تنظیمات</h2>
-                    <p>سرعت و زیر و بم در حال پیاده‌سازی...</p>
-                </div>
+            <section class="card voice-cloning-card">
+                <h2>🎤 تقلید صدای شخص</h2>
+                <p>یک فایل صوتی کوتاه (۳-۱۰ ثانیه، WAV/MP3) از صدای خود آپلود کنید.</p>
+                <input type="file" id="voiceFile" accept=".wav,.mp3">
+                <button id="cloneVoiceBtn" class="btn">🧬 تحلیل و ذخیره صدا</button>
+                <button id="deleteVoiceBtn" class="btn danger">🗑 حذف پروفایل</button>
+                <div id="cloneStatus"></div>
+                <hr>
+                <textarea id="personalText" rows="3" placeholder="متن را برای تولید با صدای شخص وارد کنید..."></textarea>
+                <button id="personalSpeakBtn" class="btn primary">تولید با صدای شخص</button>
             </section>
         </main>
-        <footer><p>sound-make-book · توسعه توسط رامین اجلال</p></footer>
+        <footer>
+            sound-make-book · توسعه توسط رامین اجلال (@tetrashop)
+        </footer>
     </div>
-    <script src="/scripts/main.js"></script>
+    <script src="scripts/main.js"></script>
 </body>
 </html>
-<section id="voice-clone-local" class="tab-content">
-    <div class="card">
-        <h2>🎤 تقلید صدای شخص (بدون اینترنت)</h2>
-        <p>یک فایل صوتی کوتاه (۳-۱۰ ثانیه، wav/mp3) از صدای خود آپلود کنید.</p>
-        <input type="file" id="voice-sample-file" accept="audio/*">
-        <button id="upload-profile-btn" class="btn">📤 تحلیل و ذخیره صدا</button>
-        <button id="clear-profile-btn" class="btn" style="background:#ccc;">🗑️ حذف پروفایل</button>
-        <div id="profile-status"></div>
-        <hr>
-        <textarea id="clone-local-text" placeholder="متن کتاب را وارد کنید..." rows="6"></textarea>
-        <button id="speak-with-profile-btn" class="btn btn-primary">🗣️ تولید گفتار با صدای شخصی</button>
-        <div id="profile-audio-player"></div>
-    </div>
-</section>

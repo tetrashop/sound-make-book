@@ -1,8 +1,6 @@
-<div dir="rtl" align="right">
+# 📖 sound-make-book نسخه ۲.۰.۵ (طلایی)
 
-# 📖 sound-make-book
-
-**تبدیل هوشمند متن به کتاب صوتی با قابلیت تقلید صدای شخص**
+**تبدیل هوشمند متن به کتاب صوتی با قابلیت تقلید صدای شخص – بدون نیاز به اینترنت**
 
 [![GitHub release](https://img.shields.io/github/v/release/tetrashop/sound-make-book)](https://github.com/tetrashop/sound-make-book/releases)
 [![Android](https://img.shields.io/badge/Android-APK-green)](https://github.com/tetrashop/sound-make-book/releases)
@@ -10,144 +8,133 @@
 
 ---
 
-## چکیده
+## 🧩 نیازمندی‌های هر قسمت
 
-**sound-make-book** پلتفرمی متن‌باز برای تبدیل متن به گفتار (TTS) بدون نیاز به اینترنت است. با استفاده از موتور eSpeak و معماری صف پردازش هوشمند، امکان تولید کتاب صوتی با کیفیت قابل قبول را فراهم می‌کند.
+### ۱. Backend (سرور Node.js)
+- **Node.js** ≥ 18.x
+- **npm** یا **yarn**
+- **eSpeak-ng** (برای سنتز صدای آفلاین در سمت سرور) – نصب:
+  - لینوکس: `sudo apt install espeak-ng`
+  - Termux (اندروید): `pkg install espeak-ng`
+  - macOS: `brew install espeak-ng`
+  - Windows: از [espeak-ng.org](https://espeak-ng.org) دانلود کنید
+- **اختیاری**: `sox` برای تحلیل Pitch (تقلید صدا) – نصب: `pkg install sox` (Termux) یا `apt install sox`
+- **اختیاری**: `ffmpeg` برای تبدیل فرمت صوتی
 
-**قابلیت‌های کلیدی:**
-- ✅ آفلاین و بدون نیاز به اینترنت
-- ✅ تقلید صدای شخص (Voice Cloning)
-- ✅ تولید انبوه کتاب چندبخشی
-- ✅ رابط کاربری وب با ۵ تب
-- ✅ استقرار روی Termux، Docker، Vercel
+> ✅ اگر `espeak-ng` نصب نباشد، برنامه به‌طور خودکار از **Web Speech API** مرورگر استفاده می‌کند (فقط در نسخه وب).
 
----
+### ۲. Frontend (رابط کاربری وب – public/)
+- **هر مرورگر مدرن** (Chrome، Firefox، Edge، Safari)
+- **اتصال به سرور محلی** (یا فایل استاتیک)
+- **ساپورت Web Speech API** (برای تبدیل متن به گفتار مستقیم در مرورگر)
+- **فعال بودن موتور TTS فارسی** در سیستم‌عامل (مثلاً Google Text-to-Speech روی اندروید)
 
-## تاریخچه نسخه‌ها
+### ۳. اپلیکیشن اندروید (android-app/)
+- **Android Studio** (یا خط فرمان با Gradle)
+- **Java JDK** 11 یا 17
+- **Android SDK** (minSdk 26, targetSdk 34)
+- **Gradle** (wrapper همراه پروژه است)
+- **فایل keystore** برای ساخت نسخه Release (اختیاری)
 
-### نسخه 1.0 (پایه)
-- سرور HTTP ساده با Node.js
-- پیش‌نمایش صدا با Web Speech API
-- ذخیره پروژه در localStorage
-
-### نسخه 2.0 (طلایی)
-- صف تولید هوشمند با EventEmitter
-- API تولید انبوه کتاب چندبخشی
-- ابزار خط فرمان (CLI)
-- گیت‌هاب اکشن برای ساخت APK
-
-### نسخه 2.0.3 (صدای متنوع)
-- ۵ نوع صدا (معمولی، بم، زیر، سریع، آهسته)
-- تب مجزا «صدای متنوع»
-
-### نسخه 2.0.4 (تقلید صدای شخص)
-- تحلیل Pitch نمونه صدا با sox
-- آپلود و ذخیره پروفایل صدا
-- تولید گفتار با پارامترهای شخصی
-- تب «Clone صدا»
-
----
-
-## خطاها و راه‌حل‌ها
-
-| خطا | راه‌حل |
-|-----|--------|
-| `EADDRINUSE: پورت 3000 اشغال` | `pkill node` یا `PORT=3001 node api/index.js` |
-| `Cannot find module 'cors'` | `npm install cors express` |
-| `SSL connection failed` در Termux | `termux-change-repo` و انتخاب mirror چینی |
-| `git push: Connection reset` | `git remote set-url origin git@github.com:tetrashop/sound-make-book.git` |
+### ۴. تقلید صدای شخص (Voice Cloning)
+- **سخت‌افزار**: میکروفون برای ضبط نمونه صدا
+- **نرم‌افزار**:
+  - در نسخه وب: مرورگر با پشتیبانی از `MediaRecorder` (تشخیص خودکار)
+  - در نسخه آفلاین سمت سرور: نیاز به `sox` برای استخراج ویژگی‌های صدا
+- ذخیره‌سازی: `localStorage` (وب) یا فایل JSON (سرور)
 
 ---
 
-## دستاوردهای فنی
+## 📦 نصب و اجرا
 
-1. **صف پردازش هوشمند** - مدیریت درخواست‌های همزمان
-2. **تحلیل صوت بدون API** - استخراج Pitch با sox
-3. **CI/CD کامل** - ساخت خودکار APK در هر تگ
-4. **استقرار چندمنظوره** - Termux، Docker، Vercel
-
----
-
-## مسیر پیش رو
-
-### کوتاه مدت (۱-۲ ماه)
-- تقلید صدای واقعی با XTTS-v2
-- تبدیل به PWA
-- خروجی M4A/OGG
-
-### میان مدت (۳-۶ ماه)
-- ضبط مستقیم صدا در مرورگر
-- کتابخانه ۱۰۰+ صدای آماده
-- پشتیبانی از عربی، ترکی، کردی
-
-### بلند مدت (۶-۱۲ ماه)
-- مدل TTS عصبی فارسی
-- همگام‌سازی ابری
-- نسخه دسکتاپ Electron
-
----
-
-## نصب و اجرا
-
-### Termux (اندروید)
+### 🐧 Termux (اندروید) – اجرای سرور کامل
 ```bash
-pkg update && pkg install nodejs git espeak
+pkg update && pkg upgrade -y
+pkg install nodejs git espeak-ng sox   # sox اختیاری
 git clone https://github.com/tetrashop/sound-make-book.git
 cd sound-make-book
 npm install
-node api/index.js
-# باز کردن http://localhost:3000
+node simple-server.cjs
+# سپس در مرورگر localhost:3000 را باز کنید
 ```
 
-Docker
+🌐 اجرای فقط Frontend (بدون سرور Node)
+
+فایل public/index.html را مستقیماً در مرورگر باز کنید.
+
+Web Speech API بدون نیاز به بک‌اند کار می‌کند.
+
+🐳 Docker
 
 ```bash
 docker build -t sound-make-book .
 docker run -d -p 3000:3000 sound-make-book
 ```
 
-Vercel
+📱 ساخت APK اندروید
 
-```bash
-npm i -g vercel
-vercel --prod
-```
-
----
-
-API Reference
-
-مسیر متد توضیحات
-/api/synthesize POST تبدیل متن به گفتار
-/api/bulk-projects POST تولید کتاب چندبخشی
-/api/upload-voice-profile POST آپلود نمونه صدا
-/api/synthesize-with-profile POST تولید با صدای شخصی
-/api/queue-status GET وضعیت صف
+1. پوشه android-app را در Android Studio باز کنید.
+2. Build > Build Bundle(s) / APK > Build APK.
+3. فایل app-debug.apk در android-app/app/build/outputs/apk/debug/ قرار می‌گیرد.
 
 ---
 
-ساختار پروژه
+🧪 تست عملکرد
+
+· متن ساده: یک جمله فارسی بنویسید و دکمه «پیش‌نمایش» را بزنید. صدا باید پخش شود.
+· سرعت و زیروبمی: اسلایدرها را تغییر دهید و دوباره تست کنید.
+· پروژه: نام و متن را ذخیره کنید، سپس بارگذاری کنید.
+· تقلید صدا: یک فایل صوتی کوتاه (۳-۱۰ ثانیه) آپلود کنید و «تولید با صدای شخص» را امتحان کنید.
+
+---
+
+⚠️ عیب‌یابی سریع
+
+مشکل راه‌حل
+EADDRINUSE: port 3000 already in use pkill -9 node یا سرور را روی پورت دیگر اجرا کنید
+Cannot find module '...' npm install را دوباره اجرا کنید
+در Termux خطای SSL connection failed termux-change-repo و انتخاب mirror (مثلاً清华)
+صدا پخش نمی‌شود (مرورگر) تنظیمات موتور TTS گوشی را بررسی کنید (Google Text-to-Speech)
+espeak-ng: command not found طبق نیازمندی‌ها نصب کنید – یا از Web Speech API استفاده کنید
+
+---
+
+📂 ساختار پروژه (نسخه 2.0.5)
 
 ```
 sound-make-book/
-├── api/                 # سرور و ماژول‌ها
-├── public/              # Frontend (HTML/CSS/JS)
-├── android-app/         # کد اندروید
-├── audio-cache/         # کش فایل صوتی
-├── data/                # پروفایل صدا
-├── package.json         # وابستگی‌ها
-├── Dockerfile           # Docker
-└── vercel.json          # Vercel
+├── android-app/          # کد اندروید (Android Studio)
+├── api/                  # ماژول‌های سرور (مستقل)
+├── public/               # فایل‌های استاتیک وب (HTML/CSS/JS)
+│   ├── index.html
+│   ├── styles/main.css
+│   └── scripts/main.js
+├── audio-cache/          # کش فایل‌های صوتی تولید شده
+├── data/                 # پروفایل‌های صدا و تنظیمات
+├── projects/             # پروژه‌های ذخیره شده (JSON)
+├── simple-server.cjs     # سرور ساده (بدون وابستگی اضافی)
+├── server-fixed.js       # سرور جایگزین (فقط فایل‌های استاتیک)
+├── package.json          # وابستگی‌های Node.js
+├── Dockerfile
+└── vercel.json
 ```
 
 ---
 
-لایسنس
+📜 تاریخچه نسخه‌ها
 
-MIT License - استفاده آزاد با ذکر نام نویسنده
+· v2.0.5 (طلایی) – بهبود رابط کاربری، رفع باگ‌ها، پشتیبانی از Web Speech API به عنوان fallback
+· v2.0.4 – تقلید صدای شخص (Voice Cloning) با تحلیل Pitch
+· v2.0.3 – پنج نوع صدای متنوع (معمولی، بم، زیر، سریع، آهسته)
+· v2.0.0 – صف تولید هوشمند، API تولید انبوه، CLI
+
+---
+
+📜 لایسنس
+
+MIT License – استفاده آزاد با ذکر نام نویسنده
 
 توسعه‌دهنده: رامین اجلال (@tetrashop)
 
-آخرین بروزرسانی: اردیبهشت ۱۴۰۴ | نسخه 2.0.4
+آخرین بروزرسانی: اردیبهشت ۱۴۰۴ | نسخه 2.0.5
 
-</div>

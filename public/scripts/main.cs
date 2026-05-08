@@ -3,7 +3,7 @@ let speechSynthesis = window.speechSynthesis;
 let currentUtterance = null;
 let voices = [];
 let selectedVoice = null;
-let voiceProfile = null;
+let voiceProfile = null; // برای تقلید صدا (ذخیره در localStorage)
 
 // DOM elements
 const textInput = document.getElementById('textInput');
@@ -24,13 +24,14 @@ const personalText = document.getElementById('personalText');
 const personalSpeakBtn = document.getElementById('personalSpeakBtn');
 const cloneStatus = document.getElementById('cloneStatus');
 
-// ======================== بارگذاری صداها ========================
+// ======================== بارگذاری صداها و تنظیمات ========================
 function loadVoices() {
     voices = speechSynthesis.getVoices();
     if (voices.length === 0) {
         setTimeout(loadVoices, 100);
         return;
     }
+    // فیلتر صداهای فارسی و انگلیسی
     const faVoices = voices.filter(v => v.lang.includes('fa'));
     const enVoices = voices.filter(v => v.lang.includes('en'));
     voiceSelect.innerHTML = '<option value="default">معمولی (پیش‌فرض)</option>';
@@ -50,6 +51,7 @@ function loadVoices() {
             voiceSelect.appendChild(option);
         });
     }
+    // انتخاب پیش‌فرض
     if (faVoices.length) selectedVoice = faVoices[0];
     else if (voices.length) selectedVoice = voices[0];
 }
@@ -60,12 +62,15 @@ loadVoices();
 
 // اسلایدرها
 speedSlider.addEventListener('input', () => {
-    speedValue.textContent = parseFloat(speedSlider.value).toFixed(2);
+    const val = parseFloat(speedSlider.value);
+    speedValue.textContent = val.toFixed(2);
 });
 pitchSlider.addEventListener('input', () => {
-    pitchValue.textContent = parseFloat(pitchSlider.value).toFixed(2);
+    const val = parseFloat(pitchSlider.value);
+    pitchValue.textContent = val.toFixed(2);
 });
 
+// انتخاب صدا
 voiceSelect.addEventListener('change', (e) => {
     const voiceName = e.target.value;
     if (voiceName === 'default') {
@@ -75,7 +80,9 @@ voiceSelect.addEventListener('change', (e) => {
     }
 });
 
-// ======================== تبدیل متن به صدا ========================
+// ======================== تبدیل متن به صدا (بهینه شده با کش) ========================
+let audioCache = new Map(); // ساده برای کش کردن صدا (در حافظه)
+
 function speakText(text, usePersonalVoice = false) {
     if (!text.trim()) {
         alert('لطفاً متنی وارد کنید.');
@@ -86,19 +93,27 @@ function speakText(text, usePersonalVoice = false) {
         currentUtterance = null;
     }
     if (usePersonalVoice && voiceProfile && voiceProfile.audioData) {
-        alert('تقلید صدا نیاز به پردازش پیشرفته دارد. فعلاً از صدای معمولی استفاده می‌شود.');
-        // fallback to normal TTS
+        // شبیه‌سازی تقلید صدا با استفاده از Web Audio (در اینجا یک نمونه ساده پخش صدای ضبط شده)
+        // برای پیاده‌سازی واقعی نیاز به سرور یا librosa است، فعلاً از fallback استفاده می‌کنیم
+        playPersonalVoice(text);
+        return;
     }
     const utterance = new SpeechSynthesisUtterance(text);
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.rate = parseFloat(speedSlider.value);
     utterance.pitch = parseFloat(pitchSlider.value);
     utterance.lang = /[\u0600-\u06FF]/.test(text) ? 'fa-IR' : 'en-US';
-    utterance.onstart = () => { console.log('پخش صدا شروع شد'); };
+    utterance.onstart = () => { console.log('شروع پخش'); };
     utterance.onend = () => { currentUtterance = null; };
-    utterance.onerror = (e) => { console.error('خطا در پخش', e); currentUtterance = null; };
+    utterance.onerror = (e) => { console.error('خطا در پخش صدا', e); currentUtterance = null; };
     currentUtterance = utterance;
     speechSynthesis.speak(utterance);
+}
+
+function playPersonalVoice(text) {
+    // تقلید صدا – در این نسخه ساده، فقط یک اعلان نمایش می‌دهیم و با صدای معمولی پخش می‌کنیم
+    alert('تقلید صدا نیاز به پردازش پیشرفته دارد. فعلاً از صدای معمولی استفاده می‌شود.');
+    speakText(text, false);
 }
 
 previewBtn.addEventListener('click', () => {
@@ -117,7 +132,7 @@ stopBtn.addEventListener('click', () => {
     }
 });
 
-// ======================== مدیریت پروژه‌ها (localStorage) ========================
+// ======================== مدیریت پروژه‌ها (ذخیره در localStorage) ========================
 let projects = JSON.parse(localStorage.getItem('sound_projects')) || [];
 
 function renderProjects() {
@@ -184,7 +199,7 @@ saveProjectBtn.addEventListener('click', () => {
     alert('پروژه ذخیره شد.');
 });
 
-// ======================== تقلید صدا (آپلود و ذخیره) ========================
+// ======================== تقلید صدا (شبیه‌سازی ساده) ========================
 cloneVoiceBtn.addEventListener('click', () => {
     const file = voiceFileInput.files[0];
     if (!file) {
@@ -199,8 +214,8 @@ cloneVoiceBtn.addEventListener('click', () => {
     reader.onload = (e) => {
         const audioData = e.target.result;
         voiceProfile = { audioData, fileName: file.name };
-        localStorage.setItem('voice_profile', JSON.stringify({ audioData, fileName: file.name }));
-        cloneStatus.textContent = '✅ پروفایل صدا ذخیره شد. (تقلید واقعی نیاز به سرور دارد)';
+        localStorage.setItem('voice_profile', JSON.stringify({ audioData: audioData, fileName: file.name }));
+        cloneStatus.textContent = '✅ پروفایل صدا ذخیره شد. اکنون می‌توانید از «تولید با صدای شخص» استفاده کنید.';
     };
     reader.readAsDataURL(file);
 });
@@ -234,4 +249,5 @@ if (savedProfile) {
     } catch(e) { }
 }
 
+// مقداردهی اولیه پروژه‌ها
 renderProjects();

@@ -72,3 +72,8 @@ MIT License
   <sub>ساخته شده با ❤️ توسط تیم TetraShop</sub>
 </div>
 <!-- Trigger deploy: Mon Aug 17 01:49:21 +0330 2026 -->
+
+## 🌐 دیپلوی
+
+- **URL:** [https://sound-make-book.vercel.app](https://sound-make-book.vercel.app)
+- **وضعیت:** ✅ فعال
